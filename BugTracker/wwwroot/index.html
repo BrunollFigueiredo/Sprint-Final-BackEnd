@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameBugTracker — Rastreamento de Bugs para Jogos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+    <link rel="icon" href="img/gbt-hex.svg">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script>(function(){var t=localStorage.getItem('theme')||'dark';document.documentElement.setAttribute('data-bs-theme',t);})();</script>
+</head>
+<body>
+    <!-- Login Page -->
+    <div id="loginPage" class="container-fluid vh-100 d-flex align-items-center justify-content-center d-none" style="background:var(--bs-body-bg)">
+        <div class="card shadow-lg" style="width: 440px;">
+            <div class="card-header text-center login-card-header">
+                <div class="d-flex align-items-center justify-content-center gap-2 mb-1">
+                    <img src="img/gbt-hex.svg" alt="GBT" style="width:40px;height:36px;filter:drop-shadow(0 3px 10px rgba(8,145,178,0.6))">
+                    <span style="font-size:1.35rem;font-weight:800;letter-spacing:-0.02em;">
+                        <span style="color:#8b949e;font-weight:400">Game</span><span style="color:#06b6d4;font-weight:900">Bug</span><span style="color:#e6edf3;font-weight:400">Tracker</span>
+                    </span>
+                </div>
+                <p class="mb-0 small" style="color:#8b949e">Rastreamento de Bugs para Equipes de Jogos</p>
+            </div>
+            <div class="card-body p-4">
+                <ul class="nav nav-tabs mb-3" id="authTabs">
+                    <li class="nav-item"><a class="nav-link active" id="loginTab" href="#" onclick="showLoginForm(); return false;">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" id="registerTab" href="#" onclick="showRegisterForm(); return false;">Registrar</a></li>
+                </ul>
+                <!-- Login -->
+                <div id="loginForm">
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="loginEmail" class="form-control" placeholder="seu@email.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" id="loginSenha" class="form-control" placeholder="••••••">
+                    </div>
+                    <button class="btn btn-primary w-100" onclick="login()">
+                        <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+                    </button>
+                </div>
+                <!-- Register -->
+                <div id="registerForm" class="d-none">
+                    <div class="mb-3">
+                        <label class="form-label">Nome</label>
+                        <input type="text" id="regNome" class="form-control" placeholder="Seu nome completo">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Email</label>
+                        <input type="email" id="regEmail" class="form-control" placeholder="seu@email.com">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Senha</label>
+                        <input type="password" id="regSenha" class="form-control" placeholder="Mínimo 6 caracteres">
+                    </div>
+                    <div class="mb-3 p-3 bg-light rounded border">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="regTermos">
+                            <label class="form-check-label small" for="regTermos">
+                                Li e aceito os <a href="#" onclick="showTermosModal(); return false;" class="fw-bold">Termos de Uso e Política de Privacidade</a> (LGPD)
+                            </label>
+                        </div>
+                    </div>
+                    <p class="text-muted small mb-3"><i class="bi bi-info-circle me-1"></i>Novas contas são criadas com o perfil <strong>Dev</strong>. Administradores podem promovê-las depois.</p>
+                    <button class="btn btn-success w-100" onclick="register()">
+                        <i class="bi bi-person-plus me-2"></i>Registrar
+                    </button>
+                </div>
+                <div id="authAlert" class="alert mt-3 d-none"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App -->
+    <div id="mainApp" class="d-none">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark gbt-navbar">
+            <div class="container-fluid">
+                <a class="navbar-brand d-flex align-items-center gap-2" href="landing.html">
+                    <img src="img/gbt-hex.svg" alt="GBT" style="width:30px;height:27px;filter:drop-shadow(0 2px 8px rgba(8,145,178,0.55))">
+                    <span style="font-size:1rem;font-weight:800;letter-spacing:-0.02em;">
+                        <span style="color:#8b949e;font-weight:400">Game</span><span style="color:#06b6d4;font-weight:900">Bug</span><span style="color:#e6edf3;font-weight:400">Tracker</span>
+                    </span>
+                </a>
+                <div class="navbar-nav ms-auto d-flex align-items-center flex-row gap-2">
+                    <span class="text-white small me-2">
+                        <i class="bi bi-person-circle me-1"></i>
+                        <span id="userNome"></span>
+                        <span class="badge bg-warning text-dark ms-1" id="userPerfil"></span>
+                    </span>
+                    <button class="btn btn-outline-light btn-sm" id="themeToggle" onclick="toggleTheme()" title="Alternar tema">
+                        <i class="bi bi-sun" id="themeIcon"></i>
+                    </button>
+                    <button class="btn btn-outline-light btn-sm" onclick="logout()">
+                        <i class="bi bi-box-arrow-right me-1"></i>Sair
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- App Tab Bar -->
+        <div class="app-tabs">
+            <div class="container-fluid px-4">
+                <div class="d-flex">
+                    <button class="app-tab active" id="nav-dashboard" onclick="showSection('dashboard', this)"><i class="bi bi-speedometer2"></i>Dashboard</button>
+                    <button class="app-tab" id="nav-bugs" onclick="showSection('bugs', this)"><i class="bi bi-bug"></i>Bugs</button>
+                    <button class="app-tab" id="nav-projetos" onclick="showSection('projetos', this)"><i class="bi bi-folder"></i>Projetos</button>
+                    <button class="app-tab admin-only d-none" id="nav-usuarios" onclick="showSection('usuarios', this)"><i class="bi bi-people"></i>Usuários</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container-fluid p-4">
+                    <!-- Dashboard Section -->
+                    <div id="dashboardSection">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div>
+                                <h4 class="mb-0 fw-bold"><i class="bi bi-speedometer2 me-2 text-primary"></i>Dashboard</h4>
+                                <small class="text-muted">Visão geral do projeto em tempo real</small>
+                            </div>
+                            <button class="btn btn-sm btn-outline-secondary rounded-pill px-3" onclick="loadDashboard()">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Atualizar
+                            </button>
+                        </div>
+
+                        <!-- KPIs Principais -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-secondary bg-opacity-10 text-secondary">
+                                            <i class="bi bi-bug-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value" id="dash-total">—</div>
+                                            <div class="kpi-label">Total de Bugs</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card kpi-alert shadow h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon">
+                                            <i class="bi bi-rocket-takeoff-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value" id="dash-bloqueadores">—</div>
+                                            <div class="kpi-label">Bloqueiam Lançamento</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-danger bg-opacity-10 text-danger">
+                                            <i class="bi bi-exclamation-octagon-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value text-danger" id="dash-criticos">—</div>
+                                            <div class="kpi-label">Severidade Crítica</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-warning bg-opacity-10 text-warning">
+                                            <i class="bi bi-hourglass-split"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value text-warning" id="dash-abertos">—</div>
+                                            <div class="kpi-label">Em Aberto</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- KPIs Secundários -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-primary bg-opacity-10 text-primary">
+                                            <i class="bi bi-code-slash"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value text-primary" id="dash-andamento">—</div>
+                                            <div class="kpi-label">Em Andamento</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-success bg-opacity-10 text-success">
+                                            <i class="bi bi-check-circle-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value text-success" id="dash-resolvidos">—</div>
+                                            <div class="kpi-label">Resolvidos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon bg-info bg-opacity-10 text-info">
+                                            <i class="bi bi-folder-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value text-info" id="dash-projetos">—</div>
+                                            <div class="kpi-label">Projetos Ativos</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6 col-md-3">
+                                <div class="card kpi-card shadow-sm h-100">
+                                    <div class="card-body d-flex align-items-center gap-3 p-3">
+                                        <div class="kpi-icon">
+                                            <i class="bi bi-people-fill"></i>
+                                        </div>
+                                        <div>
+                                            <div class="kpi-value" id="dash-usuarios">—</div>
+                                            <div class="kpi-label">Membros da Equipe</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráficos linha 1 -->
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <div class="card chart-card shadow-sm h-100">
+                                    <div class="card-header">
+                                        <div class="chart-title">Bugs por Status</div>
+                                        <div class="chart-subtitle">Distribuição atual dos bugs por estado de resolução</div>
+                                    </div>
+                                    <div class="card-body d-flex align-items-center justify-content-center" style="min-height:240px">
+                                        <canvas id="chartStatus" style="max-height:220px"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card chart-card shadow-sm h-100">
+                                    <div class="card-header">
+                                        <div class="chart-title">Bugs por Severidade</div>
+                                        <div class="chart-subtitle">Volume de bugs agrupado por nível de impacto no jogo</div>
+                                    </div>
+                                    <div class="card-body d-flex align-items-center" style="min-height:240px">
+                                        <canvas id="chartSeveridade" style="max-height:220px; width:100%"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráficos linha 2 -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <div class="card chart-card shadow-sm h-100">
+                                    <div class="card-header">
+                                        <div class="chart-title">Bugs por Projeto</div>
+                                        <div class="chart-subtitle">Comparativo de total vs. abertos entre projetos</div>
+                                    </div>
+                                    <div class="card-body d-flex align-items-center" style="min-height:240px">
+                                        <canvas id="chartProjetos" style="max-height:220px; width:100%"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="card chart-card shadow-sm h-100">
+                                    <div class="card-header">
+                                        <div class="chart-title">Bugs por Plataforma</div>
+                                        <div class="chart-subtitle">Onde os bugs estão sendo reportados</div>
+                                    </div>
+                                    <div class="card-body d-flex align-items-center" style="min-height:240px">
+                                        <canvas id="chartPlataforma" style="max-height:220px; width:100%"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Gráfico linha 3: Bugs por Tipo -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <div class="card chart-card shadow-sm">
+                                    <div class="card-header">
+                                        <div class="chart-title">Bugs por Tipo</div>
+                                        <div class="chart-subtitle">Classificação por categoria de impacto — Crash, Gameplay, Visual, Áudio e mais</div>
+                                    </div>
+                                    <div class="card-body d-flex align-items-center" style="min-height:180px">
+                                        <canvas id="chartTipo" style="max-height:160px; width:100%"></canvas>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bloqueadores de Lançamento -->
+                        <div id="bloqueadoresSection" class="d-none">
+                            <div class="card bloqueadores-section">
+                                <div class="card-body pt-3 pb-0">
+                                    <div class="d-flex align-items-center gap-2 mb-3">
+                                        <i class="bi bi-exclamation-circle-fill text-danger"></i>
+                                        <span class="fw-semibold" style="color:#f87171">Bloqueiam o Lançamento</span>
+                                        <span class="badge bg-danger rounded-pill" id="dash-bloqueadores-count">0</span>
+                                        <small class="text-muted ms-auto">resolva antes do release</small>
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0 small">
+                                        <thead>
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Título</th>
+                                                <th>Projeto</th>
+                                                <th>Severidade</th>
+                                                <th>Status</th>
+                                                <th>Responsável</th>
+                                                <th></th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="bloqueadoresTableBody"></tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bugs Section -->
+                    <div id="bugsSection" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="bi bi-bug me-2"></i>Bugs</h4>
+                            <button class="btn btn-sm btn-outline-danger dev-admin-only d-none" onclick="showBugModal()">
+                                <i class="bi bi-plus-lg me-1"></i>Reportar Bug
+                            </button>
+                        </div>
+                        <div class="mb-2">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-text"><i class="bi bi-search"></i></span>
+                                <input type="text" id="filtroBusca" class="form-control" placeholder="Buscar por título, descrição ou responsável…" oninput="renderBugs()">
+                                <button class="btn btn-outline-secondary" type="button" onclick="document.getElementById('filtroBusca').value='';renderBugs();" title="Limpar busca"><i class="bi bi-x-lg"></i></button>
+                            </div>
+                        </div>
+                        <div class="row mb-3 g-2">
+                            <div class="col-md-2">
+                                <select id="filtroStatus" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todos os Status</option>
+                                    <option value="Aberto">Aberto</option>
+                                    <option value="EmAndamento">Em Andamento</option>
+                                    <option value="Resolvido">Resolvido</option>
+                                    <option value="Fechado">Fechado</option>
+                                    <option value="NaoReproduzivel">Não Reproduzível</option>
+                                    <option value="NaoCorrigir">Não Corrigir</option>
+                                    <option value="Duplicado">Duplicado</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filtroTipo" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todos os Tipos</option>
+                                    <option value="Crash">Crash</option>
+                                    <option value="Visual">Visual</option>
+                                    <option value="Audio">Áudio</option>
+                                    <option value="Gameplay">Gameplay</option>
+                                    <option value="Performance">Performance</option>
+                                    <option value="UI">UI/UX</option>
+                                    <option value="Localizacao">Localização</option>
+                                    <option value="Outro">Outro</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filtroSeveridade" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todas Severidades</option>
+                                    <option value="Baixa">Baixa</option>
+                                    <option value="Media">Média</option>
+                                    <option value="Alta">Alta</option>
+                                    <option value="Critica">Crítica</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filtroProjeto" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todos os Projetos</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filtroPlataforma" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todas Plataformas</option>
+                                    <option>PC (Windows)</option>
+                                    <option>Mac (macOS)</option>
+                                    <option>Linux</option>
+                                    <option>PlayStation 5</option>
+                                    <option>PlayStation 4</option>
+                                    <option>Xbox Series X/S</option>
+                                    <option>Xbox One</option>
+                                    <option>Nintendo Switch</option>
+                                    <option>iOS</option>
+                                    <option>Android</option>
+                                    <option>WebGL / Browser</option>
+                                </select>
+                            </div>
+                            <div class="col-md-2">
+                                <select id="filtroBloqueio" class="form-select form-select-sm" onchange="renderBugs()">
+                                    <option value="">Todos</option>
+                                    <option value="1">Bloqueia Lançamento</option>
+                                    <option value="0">Não Bloqueia</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th style="width:60px">#</th>
+                                        <th>Título</th>
+                                        <th>Projeto</th>
+                                        <th>Plataforma</th>
+                                        <th>Severidade</th>
+                                        <th>Status</th>
+                                        <th>Atribuído a</th>
+                                        <th style="width:80px"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="bugsTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Projetos Section -->
+                    <div id="projetosSection" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="bi bi-folder me-2"></i>Projetos</h4>
+                            <button class="btn btn-primary admin-only d-none" onclick="showProjetoModal()">
+                                <i class="bi bi-plus-circle me-2"></i>Novo Projeto
+                            </button>
+                        </div>
+                        <div id="projetosCards" class="row g-3"></div>
+                    </div>
+
+                    <!-- Usuários Section -->
+                    <div id="usuariosSection" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="bi bi-people me-2"></i>Usuários</h4>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-hover align-middle">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Nome</th>
+                                        <th>Email</th>
+                                        <th>Perfil</th>
+                                        <th>Cadastrado em</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usuariosTableBody"></tbody>
+                            </table>
+                    </div>
+        </div>
+    </div>
+
+    <!-- Modal: Bug -->
+    <div class="modal fade" id="bugModal" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="bugModalTitle"><i class="bi bi-bug me-2 text-danger"></i>Bug</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="bugId">
+                    <div class="row g-3">
+                        <!-- Coluna esquerda -->
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Título *</label>
+                                <input type="text" id="bugTitulo" class="form-control" placeholder="Descreva o bug brevemente">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Passos para Reproduzir</label>
+                                <textarea id="bugDescricao" class="form-control" rows="3" placeholder="1. Abra o menu...&#10;2. Clique em...&#10;3. Observe que..."></textarea>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-success fw-semibold"><i class="bi bi-check-circle me-1"></i>Resultado Esperado</label>
+                                    <textarea id="bugResultadoEsperado" class="form-control border-success" rows="2" placeholder="O que deveria acontecer..."></textarea>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-danger fw-semibold"><i class="bi bi-x-circle me-1"></i>Resultado Obtido</label>
+                                    <textarea id="bugResultadoObtido" class="form-control border-danger" rows="2" placeholder="O que aconteceu de fato..."></textarea>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cena / Área / Nível</label>
+                                <input type="text" id="bugCena" class="form-control" placeholder="Ex: Fase 3 - Caverna, Menu Principal, Boss Arena">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Detalhes do Ambiente</label>
+                                <textarea id="bugDetalhesAmbiente" class="form-control" rows="2" placeholder="Ex: GPU RTX 3060, Resolução 1920x1080, Windows 11, Configuração Gráfica Alta"></textarea>
+                            </div>
+                        </div>
+                        <!-- Coluna direita -->
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Projeto *</label>
+                                <select id="bugProjeto" class="form-select"></select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Severidade *</label>
+                                <select id="bugSeveridade" class="form-select">
+                                    <option value="Baixa">🟢 Baixa</option>
+                                    <option value="Media">🟡 Média</option>
+                                    <option value="Alta">🟠 Alta</option>
+                                    <option value="Critica">🔴 Crítica</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">Tipo de Bug</label>
+                                <select id="bugTipo" class="form-select">
+                                    <option value="">Não classificado</option>
+                                    <option value="Crash">💥 Crash / Travamento</option>
+                                    <option value="Visual">🎨 Visual / Gráfico</option>
+                                    <option value="Audio">🔊 Áudio</option>
+                                    <option value="Gameplay">🎮 Gameplay / Mecânica</option>
+                                    <option value="Performance">⚡ Performance / FPS</option>
+                                    <option value="UI">🖥️ Interface (UI/UX)</option>
+                                    <option value="Localizacao">🌐 Localização / Texto</option>
+                                    <option value="Outro">🔧 Outro</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Status</label>
+                                <select id="bugStatus" class="form-select">
+                                    <option value="Aberto">Aberto</option>
+                                    <option value="EmAndamento">Em Andamento</option>
+                                    <option value="Resolvido">Resolvido</option>
+                                    <option value="Fechado">Fechado</option>
+                                    <option value="NaoReproduzivel">Não Reproduzível</option>
+                                    <option value="NaoCorrigir">Não Corrigir</option>
+                                    <option value="Duplicado">Duplicado</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Milestone / Release-Alvo</label>
+                                <input type="text" id="bugMilestone" class="form-control" placeholder="Ex: v1.0 Launch, Beta Sprint 3">
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Plataforma</label>
+                                <select id="bugPlataforma" class="form-select">
+                                    <option value="">Não especificado</option>
+                                    <option>PC (Windows)</option>
+                                    <option>Mac (macOS)</option>
+                                    <option>Linux</option>
+                                    <option>PlayStation 5</option>
+                                    <option>PlayStation 4</option>
+                                    <option>Xbox Series X/S</option>
+                                    <option>Xbox One</option>
+                                    <option>Nintendo Switch</option>
+                                    <option>iOS</option>
+                                    <option>Android</option>
+                                    <option>WebGL / Browser</option>
+                                </select>
+                            </div>
+                            <div class="row g-2 mb-3">
+                                <div class="col-7">
+                                    <label class="form-label">Versão do Jogo</label>
+                                    <input type="text" id="bugVersaoJogo" class="form-control" placeholder="Ex: 0.4.2">
+                                </div>
+                                <div class="col-5">
+                                    <label class="form-label">Nº Build</label>
+                                    <input type="text" id="bugNumeroBuild" class="form-control" placeholder="#1042">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Frequência de Reprodução</label>
+                                <select id="bugFrequencia" class="form-select">
+                                    <option value="">Não informado</option>
+                                    <option>Sempre (100%)</option>
+                                    <option>Frequentemente (&gt;50%)</option>
+                                    <option>Às Vezes (~50%)</option>
+                                    <option>Raramente (&lt;10%)</option>
+                                    <option>Não Consigo Reproduzir</option>
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Atribuído a</label>
+                                <select id="bugAtribuido" class="form-select">
+                                    <option value="">Nenhum</option>
+                                </select>
+                            </div>
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="bugBloqueiaLancamento">
+                                <label class="form-check-label fw-bold text-danger" for="bugBloqueiaLancamento">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Bloqueia Lançamento
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-danger" onclick="saveBug()">
+                        <i class="bi bi-save me-2"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Projeto -->
+    <div class="modal fade" id="projetoModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="projetoModalTitle"><i class="bi bi-folder me-2 text-primary"></i>Projeto</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="projetoId">
+                    <div class="row g-3">
+                        <div class="col-md-8">
+                            <label class="form-label fw-bold">Nome do Projeto *</label>
+                            <input type="text" id="projetoNome" class="form-control" placeholder="Nome do jogo ou projeto">
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Versão Atual / Build</label>
+                            <input type="text" id="projetoVersao" class="form-control" placeholder="Ex: 0.4.2, Alpha 3">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">Descrição</label>
+                            <textarea id="projetoDescricao" class="form-control" rows="2" placeholder="Breve descrição do projeto..."></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Motor / Engine</label>
+                            <select id="projetoMotor" class="form-select">
+                                <option value="">Não especificado</option>
+                                <option>Unity</option>
+                                <option>Unreal Engine</option>
+                                <option>Godot</option>
+                                <option>GameMaker Studio</option>
+                                <option>Phaser</option>
+                                <option>RPG Maker</option>
+                                <option>Engine Própria</option>
+                                <option>Outro</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Plataformas-Alvo</label>
+                            <input type="text" id="projetoPlataformas" class="form-control" placeholder="Ex: PC, PS5, Xbox, Switch">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="saveProjeto()">
+                        <i class="bi bi-save me-2"></i>Salvar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Detalhes do Bug + Comentários -->
+    <div class="modal fade" id="bugDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-card-text me-2"></i>
+                        <span id="detailTitulo"></span>
+                        <span id="detailBloqueio" class="badge bg-danger ms-2 d-none"><i class="bi bi-exclamation-triangle me-1"></i>Bloqueia Lançamento</span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2 mb-3 align-items-center flex-wrap">
+                        <div class="col-auto"><span class="badge fs-6" id="detailStatus"></span></div>
+                        <div class="col-auto"><span class="badge fs-6" id="detailSeveridade"></span></div>
+                        <div class="col-auto"><span class="badge bg-secondary" id="detailTipo"></span></div>
+                        <div class="col-auto"><span class="badge bg-dark" id="detailPlataforma"></span></div>
+                        <div class="col-auto" id="detailMilestoneRow"><span class="badge bg-info text-dark"><i class="bi bi-flag me-1"></i><span id="detailMilestone"></span></span></div>
+                        <div class="col-auto"><small class="text-muted"><i class="bi bi-folder me-1"></i><span id="detailProjeto"></span></small></div>
+                        <div class="col-auto"><small class="text-muted"><i class="bi bi-tools me-1"></i><span id="detailVersaoJogo"></span></small></div>
+                        <div class="col-auto" id="detailBuildRow"><small class="text-muted"><i class="bi bi-hash me-1"></i>Build <span id="detailNumeroBuild"></span></small></div>
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <small class="text-muted d-block"><i class="bi bi-person me-1"></i>Reportado por <strong id="detailReportado"></strong></small>
+                            <small class="text-muted d-block"><i class="bi bi-person-check me-1"></i>Atribuído a <strong id="detailAtribuido"></strong></small>
+                            <small class="text-muted d-block"><i class="bi bi-calendar me-1"></i>Criado em <span id="detailData"></span></small>
+                        </div>
+                        <div class="col-md-6">
+                            <small class="text-muted d-block" id="detailCenaRow"><i class="bi bi-map me-1"></i>Cena/Área: <strong id="detailCena"></strong></small>
+                            <small class="text-muted d-block" id="detailFreqRow"><i class="bi bi-arrow-repeat me-1"></i>Frequência: <strong id="detailFrequencia"></strong></small>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted fw-semibold"><i class="bi bi-list-ol me-1"></i>Passos para Reproduzir</small>
+                        <p id="detailDescricao" class="detail-pre mt-1 mb-0 border rounded p-3 small"></p>
+                    </div>
+                    <div id="detailResultadosRow" class="row g-3 mb-3 d-none">
+                        <div class="col-md-6">
+                            <div class="detail-expected">
+                                <small class="text-success fw-semibold d-block mb-1"><i class="bi bi-check-circle me-1"></i>Resultado Esperado</small>
+                                <p id="detailResultadoEsperado" class="mb-0 small text-muted"></p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="detail-obtained">
+                                <small class="text-danger fw-semibold d-block mb-1"><i class="bi bi-x-circle me-1"></i>Resultado Obtido</small>
+                                <p id="detailResultadoObtido" class="mb-0 small text-muted"></p>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="detailAmbienteRow" class="mb-3 d-none">
+                        <small class="text-muted"><i class="bi bi-pc-display me-1"></i><strong>Ambiente:</strong> <span id="detailAmbiente"></span></small>
+                    </div>
+
+                    <hr>
+                    <h6><i class="bi bi-chat-dots me-2"></i>Comentários</h6>
+                    <div id="comentariosLista" class="mb-3" style="max-height:300px; overflow-y:auto;"></div>
+                    <div class="input-group">
+                        <input type="text" id="novoComentario" class="form-control" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter') postComentario()">
+                        <button class="btn btn-primary" onclick="postComentario()">
+                            <i class="bi bi-send"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary dev-edit-btn d-none" onclick="editBugFromDetail()">
+                        <i class="bi bi-pencil me-1"></i>Editar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Termos LGPD -->
+    <div class="modal fade" id="termosModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title"><i class="bi bi-shield-check me-2"></i>Termos de Uso e Política de Privacidade</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <h6 class="fw-bold">1. Coleta de Dados Pessoais</h6>
+                    <p class="small text-muted">O GameBugTracker coleta apenas os dados necessários para o funcionamento da plataforma: nome completo, endereço de e-mail e senha (armazenada de forma criptografada). Não coletamos dados sensíveis conforme definido pelo Art. 5º, II da Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018).</p>
+
+                    <h6 class="fw-bold">2. Finalidade do Tratamento</h6>
+                    <p class="small text-muted">Os dados coletados são utilizados exclusivamente para: autenticação na plataforma, identificação do autor de registros de bugs e comentários, e comunicação interna da equipe. Nenhum dado é compartilhado com terceiros para fins comerciais.</p>
+
+                    <h6 class="fw-bold">3. Armazenamento e Segurança</h6>
+                    <p class="small text-muted">As senhas são armazenadas com hash BCrypt. Os dados são mantidos em servidor seguro e acessados somente por pessoal autorizado. O acesso à plataforma é protegido por autenticação via token JWT.</p>
+
+                    <h6 class="fw-bold">4. Direitos do Titular</h6>
+                    <p class="small text-muted">Em conformidade com o Art. 18 da LGPD, você tem direito a: confirmar a existência de tratamento, acessar seus dados, corrigir dados incompletos ou desatualizados, solicitar a eliminação dos seus dados pessoais e revogar o consentimento a qualquer momento. Para exercer esses direitos, entre em contato com o administrador da plataforma.</p>
+
+                    <h6 class="fw-bold">5. Retenção de Dados</h6>
+                    <p class="small text-muted">Os dados são retidos enquanto a conta estiver ativa. Após a exclusão da conta, os dados pessoais são removidos, salvo obrigação legal de retenção.</p>
+
+                    <h6 class="fw-bold">6. Consentimento</h6>
+                    <p class="small text-muted">Ao marcar a caixa de aceitação e criar sua conta, você declara ter lido, compreendido e concordado com estes termos, fornecendo seu consentimento livre, informado e inequívoco para o tratamento dos seus dados pessoais conforme descrito acima, nos termos do Art. 7º, I da LGPD.</p>
+
+                    <div class="alert alert-info small mb-0">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Este documento está em conformidade com a <strong>Lei Geral de Proteção de Dados (LGPD — Lei nº 13.709/2018)</strong>.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fechar</button>
+                    <button type="button" class="btn btn-primary" onclick="aceitarTermos()">
+                        <i class="bi bi-check-circle me-1"></i>Li e Aceito
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div class="position-fixed bottom-0 end-0 p-3" style="z-index: 9999">
+        <div id="toast" class="toast align-items-center border-0" role="alert">
+            <div class="d-flex">
+                <div class="toast-body" id="toastMsg"></div>
+                <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,21 @@
+# Build output
+**/bin/
+**/obj/
+**/publish/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+bin_check/
+
+# SQLite database (não versionar o banco de dados)
+*.db
+*.db-shm
+*.db-wal
+
+# dotnet
+*.swp
+.DS_Store

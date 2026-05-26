@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Preview — Logos GameBugTracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg:    #0d1117;
+            --card:  #161b22;
+            --border:#30363d;
+            --teal:  #06b6d4;
+            --text:  #e6edf3;
+            --muted: #8b949e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: system-ui,-apple-system,'Segoe UI',sans-serif; min-height: 100vh; padding: 2rem; }
+
+        h1 { font-size: 1rem; color: var(--muted); font-weight: 500; margin-bottom: 2rem; text-align: center; letter-spacing: 0.1em; text-transform: uppercase; }
+
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 2rem; max-width: 1100px; margin: 0 auto; }
+
+        .logo-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: border-color .2s, transform .2s;
+        }
+        .logo-card:hover { border-color: var(--teal); transform: translateY(-3px); }
+
+        .card-label {
+            padding: 1rem 1.25rem 0;
+            font-size: 0.7rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--teal);
+        }
+        .card-desc {
+            padding: 0.25rem 1.25rem 1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+        .preview-area {
+            background: var(--bg);
+            padding: 2.5rem 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            align-items: center;
+        }
+        .preview-row {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.6rem;
+        }
+        .preview-size-label {
+            font-size: 0.65rem;
+            color: #484f58;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+        }
+
+        /* ─── ESTILO 1: ÍCONE + TEXTO ─────────────────────────────── */
+        .logo-s1 { display: flex; align-items: center; gap: 0.75rem; }
+        .logo-s1 .icon-wrap {
+            width: 48px; height: 48px; flex-shrink: 0;
+        }
+        .logo-s1 .icon-wrap img { width: 100%; height: 100%; }
+        .logo-s1 .text-wrap { line-height: 1; }
+        .logo-s1 .txt-game { font-size: 0.7rem; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.1em; display: block; margin-bottom: 3px; }
+        .logo-s1 .txt-bug  { font-size: 1.5rem; font-weight: 900; color: var(--teal); letter-spacing: -0.04em; line-height: 1; }
+        .logo-s1 .txt-tracker { font-size: 1rem; font-weight: 500; color: var(--text); letter-spacing: -0.01em; }
+
+        /* small navbar version */
+        .logo-s1.sm .icon-wrap { width: 32px; height: 32px; }
+        .logo-s1.sm .txt-game { font-size: 0.55rem; }
+        .logo-s1.sm .txt-bug  { font-size: 1.1rem; }
+        .logo-s1.sm .txt-tracker { font-size: 0.75rem; }
+
+        /* ─── ESTILO 2: BADGE HEX ─────────────────────────────────── */
+        .logo-s2 { display: flex; flex-direction: column; align-items: center; gap: 0.75rem; }
+        .hex-wrap { position: relative; width: 110px; height: 99px; filter: drop-shadow(0 6px 18px rgba(8,145,178,0.55)); }
+        .hex-wrap img { width: 100%; height: 100%; }
+        .logo-s2 .badge-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--text);
+            letter-spacing: -0.02em;
+            line-height: 1;
+        }
+        .logo-s2 .badge-title .b-game    { color: var(--muted); font-weight: 400; }
+        .logo-s2 .badge-title .b-bug     { color: var(--teal);  font-weight: 900; }
+        .logo-s2 .badge-title .b-tracker { color: var(--text);  font-weight: 400; }
+        .logo-s2 .badge-sub {
+            font-size: 0.65rem;
+            font-weight: 500;
+            color: var(--muted);
+            letter-spacing: 0.12em;
+        }
+
+        /* ─── ESTILO 3: WORDMARK ──────────────────────────────────── */
+        .logo-s3 { display: flex; flex-direction: column; align-items: center; gap: 0; line-height: 1; }
+        .logo-s3 .w-game    { font-size: 0.75rem; font-weight: 300; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5em; }
+        .logo-s3 .w-bug     { font-size: 3.5rem; font-weight: 900; color: var(--teal); letter-spacing: -0.06em; line-height: 0.9; position: relative; }
+        .logo-s3 .w-bug::after {
+            content: '';
+            display: block;
+            height: 3px;
+            background: linear-gradient(to right, transparent, var(--teal), transparent);
+            border-radius: 2px;
+            margin-top: 2px;
+        }
+        .logo-s3 .w-tracker { font-size: 0.75rem; font-weight: 300; color: var(--text); text-transform: uppercase; letter-spacing: 0.5em; margin-top: 4px; }
+
+        .logo-s3.sm .w-game    { font-size: 0.55rem; letter-spacing: 0.3em; }
+        .logo-s3.sm .w-bug     { font-size: 1.6rem; }
+        .logo-s3.sm .w-tracker { font-size: 0.55rem; letter-spacing: 0.3em; }
+
+        /* nav preview strip */
+        .nav-preview {
+            background: #161b22;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 0.6rem 1.2rem;
+            display: flex;
+            align-items: center;
+            width: 100%;
+            max-width: 340px;
+            gap: 1rem;
+        }
+        .nav-preview .spacer { flex: 1; }
+        .nav-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--border); }
+        .nav-dot.t { background: var(--teal); }
+
+        /* divider between sizes */
+        .size-divider { border: none; border-top: 1px solid var(--border); width: 100%; }
+    </style>
+</head>
+<body>
+    <h1>Escolha o estilo de logo — GameBugTracker</h1>
+
+    <div class="grid">
+
+        <!-- ═══ ESTILO 1: ÍCONE + TEXTO ═══════════════════════════ -->
+        <div class="logo-card">
+            <div class="card-label">Estilo 1 — Ícone + Texto</div>
+            <div class="card-desc">Ícone de controller-bug à esquerda com logotipo em duas linhas. Versátil para navbar e hero.</div>
+            <div class="preview-area">
+                <!-- Grande (hero) -->
+                <div class="preview-row">
+                    <div class="preview-size-label">Landing page / Hero</div>
+                    <div class="logo-s1">
+                        <div class="icon-wrap"><img src="img/gbt-icon.svg" alt="GBT"></div>
+                        <div class="text-wrap">
+                            <span class="txt-game">Game</span>
+                            <span><span class="txt-bug">Bug</span><span class="txt-tracker">Tracker</span></span>
+                        </div>
+                    </div>
+                </div>
+                <hr class="size-divider">
+                <!-- Navbar strip -->
+                <div class="preview-row" style="width:100%">
+                    <div class="preview-size-label">Navbar</div>
+                    <div class="nav-preview">
+                        <div class="logo-s1 sm">
+                            <div class="icon-wrap"><img src="img/gbt-icon.svg" alt="GBT"></div>
+                            <div class="text-wrap">
+                                <span class="txt-game">Game</span>
+                                <span><span class="txt-bug">Bug</span><span class="txt-tracker">Tracker</span></span>
+                            </div>
+                        </div>
+                        <div class="spacer"></div>
+                        <div class="nav-dot t"></div>
+                        <div class="nav-dot"></div>
+                        <div class="nav-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ESTILO 2: HEX BADGE ════════════════════════════════ -->
+        <div class="logo-card">
+            <div class="card-label">Estilo 2 — Hex Badge</div>
+            <div class="card-desc">Símbolo em hexágono com o ícone dentro. Estilo "gaming studio", forte como hero e ícone isolado.</div>
+            <div class="preview-area">
+                <!-- Grande -->
+                <div class="preview-row">
+                    <div class="preview-size-label">Landing page / Hero</div>
+                    <div class="logo-s2">
+                        <div class="hex-wrap">
+                            <img src="img/gbt-hex.svg" alt="GameBugTracker">
+                        </div>
+                        <div class="badge-title">
+                            <span class="b-game">Game</span><span class="b-bug">Bug</span><span class="b-tracker">Tracker</span>
+                        </div>
+                        <div class="badge-sub">Bug Tracking para Games</div>
+                    </div>
+                </div>
+                <hr class="size-divider">
+                <!-- Navbar -->
+                <div class="preview-row" style="width:100%">
+                    <div class="preview-size-label">Navbar</div>
+                    <div class="nav-preview">
+                        <div style="display:flex;align-items:center;gap:0.55rem">
+                            <img src="img/gbt-hex.svg" alt="GBT"
+                                 style="width:30px;height:27px;filter:drop-shadow(0 2px 6px rgba(8,145,178,0.5))">
+                            <span style="font-size:0.95rem;font-weight:800;color:#e6edf3;letter-spacing:-0.02em">
+                                <span style="color:#8b949e;font-weight:400">Game</span><span style="color:#06b6d4;font-weight:900">Bug</span><span style="font-weight:400">Tracker</span>
+                            </span>
+                        </div>
+                        <div class="spacer"></div>
+                        <div class="nav-dot t"></div>
+                        <div class="nav-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ═══ ESTILO 3: WORDMARK ═════════════════════════════════ -->
+        <div class="logo-card">
+            <div class="card-label">Estilo 3 — Wordmark</div>
+            <div class="card-desc">Só tipografia. "BUG" em destaque teal gigante entre "GAME" e "TRACKER" finos. Impacto visual imediato.</div>
+            <div class="preview-area">
+                <!-- Grande -->
+                <div class="preview-row">
+                    <div class="preview-size-label">Landing page / Hero</div>
+                    <div class="logo-s3">
+                        <div class="w-game">Game</div>
+                        <div class="w-bug">BUG</div>
+                        <div class="w-tracker">Tracker</div>
+                    </div>
+                </div>
+                <hr class="size-divider">
+                <!-- Navbar -->
+                <div class="preview-row" style="width:100%">
+                    <div class="preview-size-label">Navbar</div>
+                    <div class="nav-preview">
+                        <div class="logo-s3 sm">
+                            <div class="w-game">Game</div>
+                            <div class="w-bug" style="font-size:1.6rem">BUG</div>
+                            <div class="w-tracker">Tracker</div>
+                        </div>
+                        <div class="spacer"></div>
+                        <div class="nav-dot t"></div>
+                        <div class="nav-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <p style="text-align:center;color:#484f58;font-size:0.75rem;margin-top:3rem">
+        Escolha um estilo e informe qual preferiu para aplicar no projeto.
+    </p>
+</body>
+</html>

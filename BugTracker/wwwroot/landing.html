@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameBugTracker — Bug Tracking para Equipes de Jogos</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <link rel="icon" href="img/gbt-hex.svg">
+    <style>
+        :root {
+            --bg-deep:   #0d1117;
+            --bg-card:   #161b22;
+            --border:    #30363d;
+            --teal:      #06b6d4;
+            --teal-glow: rgba(6,182,212,0.15);
+            --text:      #e6edf3;
+            --muted:     #8b949e;
+        }
+
+        * { box-sizing: border-box; }
+        body { background: var(--bg-deep); color: var(--text); font-family: system-ui, -apple-system, sans-serif; }
+
+        /* NAVBAR */
+        .landing-nav {
+            background: rgba(13,17,23,0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            position: sticky; top: 0; z-index: 100;
+            padding: 0.75rem 0;
+        }
+        .brand { display: flex; align-items: center; gap: 0.5rem; text-decoration: none; }
+        .brand .brand-hex { width: 34px; height: 31px; filter: drop-shadow(0 2px 8px rgba(8,145,178,0.55)); }
+        .brand .brand-text { font-size: 1.1rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1; }
+        .brand .brand-text .b-game    { color: #8b949e; font-weight: 400; }
+        .brand .brand-text .b-bug     { color: var(--teal); font-weight: 900; }
+        .brand .brand-text .b-tracker { color: var(--text); font-weight: 400; }
+        .btn-teal {
+            background: var(--teal);
+            color: #0d1117;
+            font-weight: 700;
+            border: none;
+            padding: 0.55rem 1.4rem;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background 0.2s, transform 0.15s;
+            display: inline-block;
+        }
+        .btn-teal:hover { background: #22d3ee; color: #0d1117; transform: translateY(-1px); }
+        .btn-outline-teal {
+            background: transparent;
+            color: var(--teal);
+            border: 1px solid var(--teal);
+            padding: 0.55rem 1.4rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: background 0.2s;
+            display: inline-block;
+        }
+        .btn-outline-teal:hover { background: var(--teal-glow); color: #22d3ee; }
+
+        /* HERO */
+        .hero {
+            padding: 7rem 0 5rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -120px; left: 50%; transform: translateX(-50%);
+            width: 700px; height: 700px;
+            background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .hero-tag {
+            display: inline-block;
+            background: var(--teal-glow);
+            color: var(--teal);
+            border: 1px solid rgba(6,182,212,0.3);
+            border-radius: 20px;
+            padding: 0.25rem 0.85rem;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            margin-bottom: 1.2rem;
+        }
+        .hero h1 {
+            font-size: clamp(2.2rem, 5vw, 3.6rem);
+            font-weight: 900;
+            line-height: 1.1;
+            letter-spacing: -0.03em;
+            margin-bottom: 1.2rem;
+        }
+        .hero h1 .accent { color: var(--teal); }
+        .hero p { font-size: 1.1rem; color: var(--muted); line-height: 1.7; max-width: 480px; margin-bottom: 2rem; }
+        .hero-btns { display: flex; gap: 1rem; flex-wrap: wrap; }
+
+        /* MOCK SCREEN */
+        .mock-screen {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(6,182,212,0.08);
+        }
+        .mock-bar { display: flex; gap: 6px; margin-bottom: 1rem; }
+        .mock-dot { width: 10px; height: 10px; border-radius: 50%; }
+        .mock-kpi-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 14px; }
+        .mock-kpi {
+            background: #1c2128;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        .mock-kpi-val { font-size: 1.5rem; font-weight: 800; color: var(--text); }
+        .mock-kpi-lbl { font-size: 0.62rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+        .mock-chart {
+            background: #1c2128;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            height: 80px;
+            display: flex;
+            align-items: flex-end;
+            gap: 6px;
+        }
+        .mock-bar-item {
+            flex: 1;
+            border-radius: 4px 4px 0 0;
+            opacity: 0.85;
+        }
+        .mock-table {
+            background: #1c2128;
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .mock-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.72rem;
+        }
+        .mock-row:last-child { border-bottom: none; }
+        .mock-badge {
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+
+        /* FEATURES */
+        .features { padding: 5rem 0; }
+        .section-label { color: var(--teal); font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 0.5rem; }
+        .section-title { font-size: clamp(1.6rem, 3vw, 2.2rem); font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.6rem; }
+        .section-sub { color: var(--muted); font-size: 1rem; max-width: 520px; margin: 0 auto 3rem; }
+        .feature-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 1.75rem;
+            height: 100%;
+            transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+        }
+        .feature-card:hover {
+            border-color: rgba(6,182,212,0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
+        }
+        .feature-icon {
+            width: 48px; height: 48px;
+            border-radius: 12px;
+            background: var(--teal-glow);
+            color: var(--teal);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.3rem;
+            margin-bottom: 1rem;
+        }
+        .feature-card h5 { font-weight: 700; font-size: 1rem; margin-bottom: 0.5rem; }
+        .feature-card p { color: var(--muted); font-size: 0.88rem; line-height: 1.6; margin: 0; }
+
+        /* STATS */
+        .stats { padding: 3rem 0; }
+        .stat-card { text-align: center; padding: 1.5rem; }
+        .stat-val { font-size: 2.6rem; font-weight: 900; color: var(--teal); letter-spacing: -0.04em; }
+        .stat-lbl { color: var(--muted); font-size: 0.85rem; margin-top: 0.2rem; }
+
+        /* HOW IT WORKS */
+        .how { padding: 4rem 0 3rem; }
+        .steps-row { display: grid; grid-template-columns: 1fr auto 1fr auto 1fr; align-items: start; gap: 0; }
+        .step { text-align: center; padding: 0 1rem; }
+        .step-num {
+            width: 56px; height: 56px; border-radius: 50%;
+            background: var(--teal-glow);
+            border: 2px solid rgba(6,182,212,0.4);
+            color: var(--teal);
+            font-size: 1.4rem; font-weight: 900;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 1.1rem;
+        }
+        .step-icon {
+            font-size: 1.6rem; color: var(--teal);
+            display: block; margin-bottom: 0.75rem;
+        }
+        .step h5 { font-size: 1rem; font-weight: 700; margin-bottom: 0.4rem; }
+        .step p  { font-size: 0.85rem; color: var(--muted); line-height: 1.55; margin: 0; }
+        .step-arrow {
+            padding-top: 26px;
+            color: var(--border);
+            font-size: 1.4rem;
+            align-self: start;
+        }
+        @media (max-width: 768px) {
+            .steps-row { grid-template-columns: 1fr; }
+            .step-arrow { display: none; }
+        }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 2rem 0;
+            color: var(--muted);
+            font-size: 0.83rem;
+            text-align: center;
+        }
+        footer a { color: var(--teal); text-decoration: none; }
+
+        /* SCROLLBAR */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-deep); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="landing-nav">
+        <div class="container d-flex justify-content-between align-items-center">
+            <a class="brand" href="landing.html">
+                <img class="brand-hex" src="img/gbt-hex.svg" alt="GBT">
+                <span class="brand-text">
+                    <span class="b-game">Game</span><span class="b-bug">Bug</span><span class="b-tracker">Tracker</span>
+                </span>
+            </a>
+            <div class="d-flex align-items-center gap-3">
+                <a href="index.html" class="btn-outline-teal d-none d-sm-inline-block">Login</a>
+                <a href="index.html" class="btn-teal">Acessar Sistema</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- HERO -->
+    <section class="hero">
+        <div class="container">
+            <div class="row align-items-center g-5">
+                <!-- Texto -->
+                <div class="col-lg-5">
+                    <div class="hero-tag"><i class="bi bi-joystick me-1"></i>Para equipes de desenvolvimento de jogos</div>
+                    <h1>
+                        Bug tracking<br>
+                        <span class="accent">inteligente</span><br>
+                        para games
+                    </h1>
+                    <p>Registre, priorize e resolva bugs com eficiência. Dashboard em tempo real, controle por perfis de acesso e campos específicos para QA de jogos.</p>
+                    <div class="hero-btns">
+                        <a href="index.html" class="btn-teal">
+                            <i class="bi bi-box-arrow-in-right me-2"></i>Acessar o Sistema
+                        </a>
+                        <a href="#features" class="btn-outline-teal">
+                            Ver funcionalidades
+                        </a>
+                    </div>
+                </div>
+                <!-- Mock Screen -->
+                <div class="col-lg-7">
+                    <div class="mock-screen">
+                        <div class="mock-bar">
+                            <div class="mock-dot" style="background:#ef4444"></div>
+                            <div class="mock-dot" style="background:#fbbf24"></div>
+                            <div class="mock-dot" style="background:#34d399"></div>
+                            <span style="margin-left:8px;font-size:0.7rem;color:var(--muted)">Dashboard — GameBugTracker</span>
+                        </div>
+                        <div class="mock-kpi-row">
+                            <div class="mock-kpi">
+                                <div class="mock-kpi-val" style="color:#f87171">12</div>
+                                <div class="mock-kpi-lbl">Bloqueadores</div>
+                            </div>
+                            <div class="mock-kpi">
+                                <div class="mock-kpi-val" style="color:#06b6d4">47</div>
+                                <div class="mock-kpi-lbl">Total de Bugs</div>
+                            </div>
+                            <div class="mock-kpi">
+                                <div class="mock-kpi-val" style="color:#34d399">23</div>
+                                <div class="mock-kpi-lbl">Resolvidos</div>
+                            </div>
+                        </div>
+                        <div class="mock-chart">
+                            <div class="mock-bar-item" style="height:60%;background:#fbbf24"></div>
+                            <div class="mock-bar-item" style="height:90%;background:#06b6d4"></div>
+                            <div class="mock-bar-item" style="height:45%;background:#8b5cf6"></div>
+                            <div class="mock-bar-item" style="height:75%;background:#ef4444"></div>
+                            <div class="mock-bar-item" style="height:30%;background:#34d399"></div>
+                            <div class="mock-bar-item" style="height:55%;background:#f97316"></div>
+                        </div>
+                        <div class="mock-table">
+                            <div class="mock-row" style="background:#1c2128">
+                                <span style="color:var(--muted);font-size:0.65rem">#</span>
+                                <span style="color:var(--muted);font-size:0.65rem;flex:1">Título</span>
+                                <span style="color:var(--muted);font-size:0.65rem">Severidade</span>
+                                <span style="color:var(--muted);font-size:0.65rem">Status</span>
+                            </div>
+                            <div class="mock-row">
+                                <span style="color:var(--muted)">#1</span>
+                                <span style="flex:1">Crash ao abrir inventário</span>
+                                <span class="mock-badge" style="background:rgba(239,68,68,0.2);color:#fca5a5">Crítica</span>
+                                <span class="mock-badge" style="background:rgba(59,130,246,0.2);color:#93c5fd">Aberto</span>
+                            </div>
+                            <div class="mock-row">
+                                <span style="color:var(--muted)">#2</span>
+                                <span style="flex:1">Textura ausente na Fase 3</span>
+                                <span class="mock-badge" style="background:rgba(249,115,22,0.2);color:#fdba74">Alta</span>
+                                <span class="mock-badge" style="background:rgba(139,92,246,0.2);color:#c4b5fd">Em Andamento</span>
+                            </div>
+                            <div class="mock-row">
+                                <span style="color:var(--muted)">#3</span>
+                                <span style="flex:1">FPS cai em área de neve</span>
+                                <span class="mock-badge" style="background:rgba(234,179,8,0.2);color:#fde047">Média</span>
+                                <span class="mock-badge" style="background:rgba(16,185,129,0.2);color:#6ee7b7">Resolvido</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="stats" style="background:rgba(6,182,212,0.03);border-top:1px solid var(--border);border-bottom:1px solid var(--border)">
+        <div class="container">
+            <div class="row g-0 text-center">
+                <div class="col-6 col-md-3 stat-card" style="border-right:1px solid var(--border)">
+                    <div class="stat-val">5</div>
+                    <div class="stat-lbl">Gráficos interativos</div>
+                </div>
+                <div class="col-6 col-md-3 stat-card" style="border-right:1px solid var(--border)">
+                    <div class="stat-val">7</div>
+                    <div class="stat-lbl">Status de bug</div>
+                </div>
+                <div class="col-6 col-md-3 stat-card" style="border-right:1px solid var(--border)">
+                    <div class="stat-val">6</div>
+                    <div class="stat-lbl">Filtros combinados</div>
+                </div>
+                <div class="col-6 col-md-3 stat-card">
+                    <div class="stat-val">2</div>
+                    <div class="stat-lbl">Perfis de acesso</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FEATURES -->
+    <section class="features" id="features">
+        <div class="container text-center">
+            <div class="section-label">Funcionalidades</div>
+            <h2 class="section-title">Tudo que sua equipe precisa</h2>
+            <p class="section-sub">Projetado para equipes de games que precisam de rastreamento eficiente, do reporte à resolução.</p>
+        </div>
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-speedometer2"></i></div>
+                        <h5>Dashboard em Tempo Real</h5>
+                        <p>5 gráficos interativos: bugs por status, severidade, projeto, plataforma e tipo. Seção dedicada de bloqueadores de lançamento.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-shield-lock-fill"></i></div>
+                        <h5>Acesso por Perfil</h5>
+                        <p>Login seguro com dois níveis de acesso: Admin com controle total da equipe e projetos, e Dev com escopo restrito aos seus próprios bugs.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-bug-fill"></i></div>
+                        <h5>Campos de QA Profissional</h5>
+                        <p>Resultado esperado vs. obtido, tipo de bug (Crash, Visual, Gameplay…), número de build, milestone e flag de bloqueio de lançamento.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-funnel-fill"></i></div>
+                        <h5>Filtros Avançados</h5>
+                        <p>Filtre bugs por status, tipo, severidade, projeto, plataforma e flag de bloqueio de lançamento — todos combinados em tempo real.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-chat-dots-fill"></i></div>
+                        <h5>Thread de Comentários</h5>
+                        <p>Sistema de comentários por bug no estilo chat. Discussão técnica entre devs e QA diretamente no contexto do bug reportado.</p>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="feature-card">
+                        <div class="feature-icon"><i class="bi bi-people-fill"></i></div>
+                        <h5>Gestão de Equipe</h5>
+                        <p>Admin gerencia usuários: promove perfis, atribui bugs a devs específicos, remove membros. Cada dev só edita bugs atribuídos a ele.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section class="how" style="border-top:1px solid var(--border)">
+        <div class="container text-center">
+            <div class="section-label">Como Funciona</div>
+            <h2 class="section-title mb-1">Do reporte à resolução</h2>
+            <p class="section-sub mb-4">Um fluxo simples e direto para manter sua equipe alinhada durante todo o ciclo de vida do bug.</p>
+
+            <div class="steps-row">
+                <!-- Passo 1 -->
+                <div class="step">
+                    <div class="step-num">1</div>
+                    <i class="bi bi-bug-fill step-icon"></i>
+                    <h5>Reporte o Bug</h5>
+                    <p>Preencha título, severidade, plataforma, passos para reproduzir e resultado esperado vs. obtido. Marque se bloqueia o lançamento.</p>
+                </div>
+
+                <div class="step-arrow"><i class="bi bi-chevron-right"></i></div>
+
+                <!-- Passo 2 -->
+                <div class="step">
+                    <div class="step-num">2</div>
+                    <i class="bi bi-person-check-fill step-icon"></i>
+                    <h5>Atribua ao Dev</h5>
+                    <p>O Admin atribui o bug ao dev responsável. A equipe discute o problema na thread de comentários diretamente no contexto do bug.</p>
+                </div>
+
+                <div class="step-arrow"><i class="bi bi-chevron-right"></i></div>
+
+                <!-- Passo 3 -->
+                <div class="step">
+                    <div class="step-num">3</div>
+                    <i class="bi bi-check-circle-fill step-icon"></i>
+                    <h5>Resolva e Feche</h5>
+                    <p>O dev atualiza o status para Em Andamento e Resolvido. O dashboard reflete tudo em tempo real — gráficos, KPIs e bloqueadores.</p>
+                </div>
+            </div>
+
+            <!-- Status flow pill -->
+            <div class="d-flex justify-content-center align-items-center gap-2 flex-wrap mt-5">
+                <span style="background:rgba(59,130,246,0.15);color:#93c5fd;border:1px solid rgba(59,130,246,0.25);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;font-weight:600">Aberto</span>
+                <i class="bi bi-arrow-right" style="color:var(--border);font-size:0.8rem"></i>
+                <span style="background:rgba(139,92,246,0.15);color:#c4b5fd;border:1px solid rgba(139,92,246,0.25);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;font-weight:600">Em Andamento</span>
+                <i class="bi bi-arrow-right" style="color:var(--border);font-size:0.8rem"></i>
+                <span style="background:rgba(16,185,129,0.15);color:#6ee7b7;border:1px solid rgba(16,185,129,0.25);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;font-weight:600">Resolvido</span>
+                <i class="bi bi-arrow-right" style="color:var(--border);font-size:0.8rem"></i>
+                <span style="background:rgba(107,114,128,0.15);color:#9ca3af;border:1px solid rgba(107,114,128,0.25);border-radius:20px;padding:0.3rem 0.9rem;font-size:0.8rem;font-weight:600">Fechado</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA FINAL -->
+    <section style="padding:4rem 0;text-align:center">
+        <div class="container">
+            <h2 style="font-size:2rem;font-weight:900;letter-spacing:-0.03em;margin-bottom:0.75rem">
+                Pronto para <span style="color:var(--teal)">começar</span>?
+            </h2>
+            <p style="color:var(--muted);margin-bottom:2rem;font-size:1rem">
+                Acesse o sistema, crie sua conta e comece a reportar bugs agora.
+            </p>
+            <a href="index.html" class="btn-teal" style="font-size:1rem;padding:0.75rem 2rem">
+                <i class="bi bi-rocket-takeoff-fill me-2"></i>Acessar o GameBugTracker
+            </a>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
+    <footer>
+        <div class="container">
+            <p class="mb-0">
+                <a href="landing.html" style="display:inline-flex;align-items:center;gap:0.4rem;text-decoration:none;color:inherit">
+                    <img src="img/gbt-hex.svg" alt="GBT" style="width:20px;height:18px;opacity:0.8">
+                    <span style="font-weight:700"><span style="color:#8b949e;font-weight:400">Game</span><span style="color:#06b6d4;font-weight:900">Bug</span>Tracker</span>
+                </a>
+                &nbsp;·&nbsp; Bug tracking para equipes de jogos
+            </p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
