@@ -32,43 +32,56 @@ function showRegisterForm() {
 }
 
 async function login() {
-    const email = document.getElementById('loginEmail').value;
+    const email = document.getElementById('loginEmail').value.trim();
     const senha = document.getElementById('loginSenha').value;
     if (!email || !senha) return showAuthAlert('Preencha todos os campos.', 'danger');
-    const res = await apiFetch('/api/auth/login', 'POST', { email, senha }, false);
-    if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
-        initApp();
-    } else {
-        const err = await res.json();
-        showAuthAlert(err.mensagem || 'Erro ao fazer login.', 'danger');
+    try {
+        const res = await apiFetch('/api/auth/login', 'POST', { email, senha }, false);
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
+            initApp();
+        } else {
+            try {
+                const err = await res.json();
+                showAuthAlert(err.mensagem || 'Email ou senha inválidos.', 'danger');
+            } catch {
+                showAuthAlert('Erro ao fazer login (status ' + res.status + ').', 'danger');
+            }
+        }
+    } catch {
+        showAuthAlert('Não foi possível conectar ao servidor.', 'danger');
     }
 }
 
 async function register() {
-    const nome = document.getElementById('regNome').value;
-    const email = document.getElementById('regEmail').value;
+    const nome = document.getElementById('regNome').value.trim();
+    const email = document.getElementById('regEmail').value.trim();
     const senha = document.getElementById('regSenha').value;
     const aceitouTermos = document.getElementById('regTermos').checked;
 
     if (!nome || !email || !senha) return showAuthAlert('Preencha todos os campos.', 'danger');
+    if (senha.length < 6) return showAuthAlert('A senha deve ter no mínimo 6 caracteres.', 'danger');
     if (!aceitouTermos) return showAuthAlert('Você deve aceitar os Termos de Uso e a Política de Privacidade para continuar.', 'warning');
 
-    const res = await apiFetch('/api/auth/register', 'POST', { nome, email, senha, aceitouTermos }, false);
-    if (res.ok) {
-        const data = await res.json();
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
-        initApp();
-    } else {
-        try {
-            const err = await res.json();
-            showAuthAlert(err.mensagem || 'Erro ao registrar.', 'danger');
-        } catch {
-            showAuthAlert('Erro ao registrar (status ' + res.status + ').', 'danger');
+    try {
+        const res = await apiFetch('/api/auth/register', 'POST', { nome, email, senha, aceitouTermos }, false);
+        if (res.ok) {
+            const data = await res.json();
+            localStorage.setItem('token', data.token);
+            localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
+            initApp();
+        } else {
+            try {
+                const err = await res.json();
+                showAuthAlert(err.mensagem || 'Erro ao registrar.', 'danger');
+            } catch {
+                showAuthAlert('Erro ao registrar (status ' + res.status + ').', 'danger');
+            }
         }
+    } catch {
+        showAuthAlert('Não foi possível conectar ao servidor.', 'danger');
     }
 }
 
@@ -108,7 +121,7 @@ function initApp() {
     document.getElementById('userNome').textContent = currentUser.nome;
     document.getElementById('userPerfil').textContent = currentUser.perfil;
     const cargoEl = document.getElementById('userCargo');
-    if (cargoEl) cargoEl.textContent = currentUser.cargo || '';
+    if (cargoEl) cargoEl.innerHTML = currentUser.cargo ? cargoBadgeHtml(currentUser.cargo) : '';
     updateThemeIcon(document.documentElement.getAttribute('data-bs-theme') || 'dark');
 
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
@@ -186,7 +199,7 @@ async function loadTagsAdmin() {
     }
     container.innerHTML = allTags.map(t => `
         <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
-            <span class="badge rounded-pill" style="background:${t.cor};font-size:0.85rem">${escHtml(t.nome)}</span>
+            <span class="tag-chip"><span class="tag-dot" style="background:${t.cor}"></span>${escHtml(t.nome)}</span>
             <small class="text-muted">${escHtml(t.departamento)}</small>
             <button class="btn btn-sm btn-outline-danger ms-auto admin-only" onclick="deleteTag(${t.id})"><i class="bi bi-trash"></i></button>
         </div>
@@ -268,10 +281,12 @@ function renderChartStatus(d) {
     const ctx = document.getElementById('chartStatus').getContext('2d');
     chartStatus = destroyChart(chartStatus);
     if (d.totalBugs === 0) { emptyChartMsg(ctx, 'Nenhum bug registrado'); return; }
+    const statusValues = ['Aberto', 'EmAndamento', 'Resolvido', 'Fechado'];
+    const statusDisplayLabels = ['Aberto', 'Em Andamento', 'Resolvido', 'Fechado'];
     chartStatus = new Chart(ctx, {
         type: 'doughnut',
         data: {
-            labels: ['Aberto', 'Em Andamento', 'Resolvido', 'Fechado'],
+            labels: statusDisplayLabels,
             datasets: [{
                 data: [d.bugsAbertos, d.bugsEmAndamento, d.bugsResolvidos, d.bugsFechados],
                 backgroundColor: ['#fbbf24', '#7c3aed', '#10b981', '#9ca3af'],
@@ -287,9 +302,15 @@ function renderChartStatus(d) {
                     position: 'bottom',
                     labels: { padding: 20, font: { size: 12 }, usePointStyle: true, pointStyleWidth: 10 }
                 },
-                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} bugs` } }
+                tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} bugs — clique para ver` } }
             },
-            cutout: '68%'
+            cutout: '68%',
+            onHover: (e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick: (e, els) => {
+                if (!els.length) return;
+                const idx = els[0].index;
+                showDrilldown(statusDisplayLabels[idx], b => b.status === statusValues[idx]);
+            }
         }
     });
 }
@@ -318,6 +339,13 @@ function renderChartSeveridade(severidades) {
             scales: {
                 y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false } },
                 x: { grid: { display: false }, border: { display: false } }
+            },
+            onHover: (e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick: (e, els) => {
+                if (!els.length) return;
+                const sev = severidades[els[0].index].severidade;
+                const label = sev === 'Media' ? 'Média' : sev === 'Critica' ? 'Crítica' : sev;
+                showDrilldown(`Severidade: ${label}`, b => b.severidade === sev);
             }
         }
     });
@@ -343,6 +371,14 @@ function renderChartProjetos(projetos) {
             scales: {
                 y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false } },
                 x: { grid: { display: false }, border: { display: false } }
+            },
+            onHover: (e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick: (e, els) => {
+                if (!els.length) return;
+                const proj = projetos[els[0].index];
+                const dsIdx = els[0].datasetIndex;
+                if (dsIdx === 1) showDrilldown(`${proj.nome} — Em Aberto`, b => b.projetoNome === proj.nome && b.status === 'Aberto');
+                else showDrilldown(`Projeto: ${proj.nome}`, b => b.projetoNome === proj.nome);
             }
         }
     });
@@ -365,6 +401,12 @@ function renderChartPlataforma(plataformas) {
             scales: {
                 x: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false } },
                 y: { grid: { display: false }, border: { display: false } }
+            },
+            onHover: (e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick: (e, els) => {
+                if (!els.length) return;
+                const plat = plataformas[els[0].index].plataforma;
+                showDrilldown(`Plataforma: ${plat}`, b => b.plataforma === plat);
             }
         }
     });
@@ -393,6 +435,12 @@ function renderChartTipo(tipos) {
             scales: {
                 y: { beginAtZero: true, ticks: { stepSize: 1 }, grid: { color: 'rgba(255,255,255,0.06)' }, border: { display: false } },
                 x: { grid: { display: false }, border: { display: false } }
+            },
+            onHover: (e, els) => { if (e.native) e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+            onClick: (e, els) => {
+                if (!els.length) return;
+                const tipo = tipos[els[0].index].tipo;
+                showDrilldown(`Tipo: ${tipoBugLabel(tipo)}`, b => b.tipoBug === tipo);
             }
         }
     });
@@ -417,6 +465,153 @@ function renderBloqueadores(bloqueadores, total) {
     `).join('');
 }
 
+// ---- Drill-down Modal ----
+async function showDrilldown(titulo, filtrarFn) {
+    if (allBugs.length === 0) await loadBugs();
+    const bugs = allBugs.filter(filtrarFn);
+    document.getElementById('drilldownTitle').innerHTML =
+        `<i class="bi bi-funnel me-2"></i>${titulo} <span class="badge bg-secondary ms-2">${bugs.length}</span>`;
+    const list = document.getElementById('drilldownList');
+    if (bugs.length === 0) {
+        list.innerHTML = '<p class="text-muted text-center py-4 mb-0">Nenhum bug encontrado.</p>';
+    } else {
+        list.innerHTML = `<div class="list-group list-group-flush">${bugs.map(b => `
+            <a class="list-group-item list-group-item-action d-flex align-items-center gap-3 py-2 px-4"
+               href="#" onclick="drilldownOpenBug(${b.id}); return false;">
+                <small class="text-muted fw-semibold" style="min-width:2rem">#${b.id}</small>
+                <div class="flex-fill">
+                    <div class="fw-semibold" style="font-size:0.875rem">${escHtml(b.titulo)}</div>
+                    <small class="text-muted">${escHtml(b.projetoNome)}</small>
+                </div>
+                <span class="badge badge-severidade-${b.severidade} me-1">${b.severidade === 'Critica' ? 'Crítica' : b.severidade === 'Media' ? 'Média' : b.severidade}</span>
+                <span class="badge badge-status-${b.status}">${statusLabel(b.status)}</span>
+            </a>
+        `).join('')}</div>`;
+    }
+    new bootstrap.Modal(document.getElementById('drilldownModal')).show();
+}
+
+function drilldownOpenBug(id) {
+    bootstrap.Modal.getInstance(document.getElementById('drilldownModal'))?.hide();
+    setTimeout(() => openBugDetail(id), 350);
+}
+
+function drilldownTotal()       { showDrilldown('Todos os Bugs',            () => true); }
+function drilldownBloqueadores(){ showDrilldown('Bloqueiam Lançamento',     b => b.bloqueiaLancamento); }
+function drilldownCriticos()    { showDrilldown('Severidade Crítica',       b => b.severidade === 'Critica'); }
+function drilldownAbertos()     { showDrilldown('Em Aberto',                b => b.status === 'Aberto'); }
+function drilldownAndamento()   { showDrilldown('Em Andamento',             b => b.status === 'EmAndamento'); }
+function drilldownResolvidos()  { showDrilldown('Resolvidos',               b => b.status === 'Resolvido'); }
+
+// ---- Media Upload ----
+let pendingMediaFiles = [];
+
+function onMediaSelected(event) {
+    const files = Array.from(event.target.files);
+    const existingCount = document.querySelectorAll('#mediaExistente .media-thumb-wrap').length;
+    const available = 5 - existingCount - pendingMediaFiles.length;
+    for (const file of files) {
+        if (pendingMediaFiles.length >= available) { showToast('Limite de 5 arquivos por bug.', 'warning'); break; }
+        pendingMediaFiles.push(file);
+    }
+    renderMediaPreview();
+    event.target.value = '';
+}
+
+function renderMediaPreview() {
+    const container = document.getElementById('mediaPreview');
+    if (!container) return;
+    container.innerHTML = pendingMediaFiles.map((f, i) => {
+        const isVideo = f.type.startsWith('video/');
+        return `<div class="media-thumb-wrap">
+            ${isVideo
+                ? `<div class="media-video-thumb" title="${escHtml(f.name)}"><i class="bi bi-play-circle-fill"></i></div>`
+                : `<img src="${URL.createObjectURL(f)}" class="media-thumb" title="${escHtml(f.name)}">`}
+            <button type="button" class="media-del-btn" onclick="removePendingMedia(${i})" title="Remover"><i class="bi bi-x"></i></button>
+        </div>`;
+    }).join('');
+}
+
+function removePendingMedia(index) {
+    pendingMediaFiles.splice(index, 1);
+    renderMediaPreview();
+}
+
+async function uploadPendingMedia(bugId) {
+    if (!pendingMediaFiles.length) return;
+    const formData = new FormData();
+    pendingMediaFiles.forEach(f => formData.append('files', f));
+    const token = localStorage.getItem('token');
+    const res = await fetch(`/api/bugs/${bugId}/media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+    });
+    pendingMediaFiles = [];
+    renderMediaPreview();
+    if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.mensagem || 'Erro ao fazer upload de mídia.', 'danger');
+    }
+}
+
+function renderDetailMedia(media) {
+    const gallery = document.getElementById('detailMediaGallery');
+    if (!gallery) return;
+    if (!media || media.length === 0) {
+        gallery.innerHTML = '<small class="text-muted">Nenhuma mídia anexada.</small>';
+        return;
+    }
+    gallery.innerHTML = media.map(m => {
+        const isVideo = m.contentType?.startsWith('video/');
+        const canDel = currentUser?.perfil === 'Admin' || m.uploadedByUserId === currentUser?.id;
+        return `<div class="media-thumb-wrap">
+            ${isVideo
+                ? `<div class="media-video-thumb" onclick="window.open('${m.url}','_blank')" title="${escHtml(m.nomeOriginal)}"><i class="bi bi-play-circle-fill"></i></div>`
+                : `<img src="${m.url}" class="media-thumb" style="cursor:pointer" onclick="window.open('${m.url}','_blank')" title="${escHtml(m.nomeOriginal)}">`}
+            ${canDel ? `<button type="button" class="media-del-btn" onclick="deleteMedia(${currentDetailBugId},${m.id})" title="Remover"><i class="bi bi-x"></i></button>` : ''}
+        </div>`;
+    }).join('');
+}
+
+async function deleteMedia(bugId, mediaId) {
+    if (!confirm('Remover esta mídia?')) return;
+    const res = await apiFetch(`/api/bugs/${bugId}/media/${mediaId}`, 'DELETE');
+    if (res.ok) {
+        showToast('Mídia removida.');
+        const idx = allBugs.findIndex(x => x.id === bugId);
+        if (idx >= 0) allBugs[idx].media = (allBugs[idx].media || []).filter(m => m.id !== mediaId);
+        renderDetailMedia(allBugs[idx]?.media || []);
+    } else {
+        showToast('Erro ao remover mídia.', 'danger');
+    }
+}
+
+async function uploadMediaDetail(event) {
+    const files = Array.from(event.target.files);
+    if (!files.length) return;
+    const bugId = currentDetailBugId;
+    const formData = new FormData();
+    files.forEach(f => formData.append('files', f));
+    const token = localStorage.getItem('token');
+    event.target.value = '';
+    const res = await fetch(`/api/bugs/${bugId}/media`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` },
+        body: formData
+    });
+    if (res.ok) {
+        const newMedia = await res.json();
+        const idx = allBugs.findIndex(x => x.id === bugId);
+        if (idx >= 0) allBugs[idx].media = [...(allBugs[idx].media || []), ...newMedia];
+        renderDetailMedia(allBugs[idx]?.media || []);
+        showToast('Mídia adicionada!');
+    } else {
+        const err = await res.json().catch(() => ({}));
+        showToast(err.mensagem || 'Erro ao fazer upload.', 'danger');
+    }
+}
+
 // ---- Bugs ----
 let allBugs = [];
 
@@ -430,7 +625,7 @@ async function loadBugs() {
 function renderTagBadges(tags) {
     if (!tags || tags.length === 0) return '';
     return tags.map(t =>
-        `<span class="badge rounded-pill me-1" style="background:${t.cor}20;color:${t.cor};border:1px solid ${t.cor}50;font-size:0.65rem">${escHtml(t.nome)}</span>`
+        `<span class="tag-chip me-1"><span class="tag-dot" style="background:${t.cor}"></span>${escHtml(t.nome)}</span>`
     ).join('');
 }
 
@@ -487,7 +682,7 @@ function renderBugs() {
             <td><span class="badge badge-status-${b.status}" style="font-size:0.75rem">${statusLabel(b.status)}</span></td>
             <td class="text-muted small">
                 ${b.atribuidoParaNome ? `<div>${escHtml(b.atribuidoParaNome)}</div>` : '—'}
-                ${b.atribuidoParaCargo ? `<small class="cargo-badge">${escHtml(b.atribuidoParaCargo)}</small>` : ''}
+                ${b.atribuidoParaCargo ? cargoBadgeHtml(b.atribuidoParaCargo) : ''}
             </td>
             <td onclick="event.stopPropagation()">
                 <div class="d-flex gap-1">
@@ -572,7 +767,7 @@ function renderTagsCheckboxes(selectedTagIds = []) {
             <input class="form-check-input" type="checkbox" id="tag_${t.id}" value="${t.id}"
                 ${selectedTagIds.includes(t.id) ? 'checked' : ''}>
             <label class="form-check-label" for="tag_${t.id}">
-                <span class="badge rounded-pill" style="background:${t.cor}20;color:${t.cor};border:1px solid ${t.cor}50">${escHtml(t.nome)}</span>
+                <span class="tag-chip"><span class="tag-dot" style="background:${t.cor}"></span>${escHtml(t.nome)}</span>
             </label>
         </div>
     `).join('');
@@ -584,7 +779,8 @@ function showBugModal(bug = null) {
         : '<i class="bi bi-bug me-2"></i>Reportar Bug';
     document.getElementById('bugId').value = bug?.id || '';
     document.getElementById('bugTitulo').value = bug?.titulo || '';
-    document.getElementById('bugDescricao').value = bug?.descricao || '';
+    const descEl = document.getElementById('bugDescricao');
+    if (descEl) descEl.value = bug?.descricao || '';
     document.getElementById('bugSeveridade').value = bug?.severidade || 'Baixa';
     document.getElementById('bugTipo').value = bug?.tipoBug || '';
     document.getElementById('bugStatus').value = bug?.status || 'Aberto';
@@ -614,6 +810,22 @@ function showBugModal(bug = null) {
     passosReproducao = (bug?.passosReproducao || []).map(p => ({ ...p }));
     renderPassosModal();
 
+    // Mídia
+    pendingMediaFiles = [];
+    renderMediaPreview();
+    const mediaExistenteEl = document.getElementById('mediaExistente');
+    if (mediaExistenteEl) {
+        const existingMedia = bug?.media || [];
+        mediaExistenteEl.innerHTML = existingMedia.map(m => {
+            const isVideo = m.contentType?.startsWith('video/');
+            return `<div class="media-thumb-wrap">
+                ${isVideo
+                    ? `<div class="media-video-thumb" title="${escHtml(m.nomeOriginal)}"><i class="bi bi-play-circle-fill"></i></div>`
+                    : `<img src="${m.url}" class="media-thumb" title="${escHtml(m.nomeOriginal)}">`}
+            </div>`;
+        }).join('');
+    }
+
     if (currentUser.perfil === 'Admin') {
         loadUsuariosSelect().then(() => {
             if (bug?.atribuidoParaId) {
@@ -638,7 +850,7 @@ async function saveBug() {
 
     const data = {
         titulo: document.getElementById('bugTitulo').value,
-        descricao: document.getElementById('bugDescricao').value,
+        descricao: document.getElementById('bugDescricao')?.value || null,
         severidade: document.getElementById('bugSeveridade').value,
         tipoBug: document.getElementById('bugTipo').value || null,
         status: document.getElementById('bugStatus').value,
@@ -668,6 +880,8 @@ async function saveBug() {
     }
 
     if (res.ok) {
+        const saved = await res.json();
+        await uploadPendingMedia(saved.id || parseInt(id));
         bootstrap.Modal.getInstance(document.getElementById('bugModal')).hide();
         showToast(id ? 'Bug atualizado!' : 'Bug reportado!');
         loadBugs();
@@ -812,7 +1026,7 @@ function cargoBadgeHtml(cargo) {
         Artista: '#ec4899', SoundDesigner: '#06b6d4', QA: '#10b981'
     };
     const color = colors[cargo] || '#6b7280';
-    return `<span class="cargo-badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${escHtml(cargo)}</span>`;
+    return `<span class="tag-chip"><span class="tag-dot" style="background:${color}"></span>${escHtml(cargo)}</span>`;
 }
 
 async function loadUsuarios() {
@@ -977,6 +1191,9 @@ async function openBugDetail(id) {
 
     // Passos de Reprodução (checkboxes interativos)
     renderPassosDetail(b.passosReproducao || []);
+
+    // Mídia
+    renderDetailMedia(b.media || []);
 
     const editBtn = document.querySelector('#bugDetailModal .dev-edit-btn');
     canEditBug(b) ? editBtn.classList.remove('d-none') : editBtn.classList.add('d-none');

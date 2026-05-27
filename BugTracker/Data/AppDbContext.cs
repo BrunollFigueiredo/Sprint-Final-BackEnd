@@ -14,6 +14,7 @@ public class AppDbContext : DbContext
     public DbSet<Tag> Tags { get; set; }
     public DbSet<BugTag> BugTags { get; set; }
     public DbSet<BugHistorico> BugHistoricos { get; set; }
+    public DbSet<BugMedia> BugMedias { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -77,5 +78,11 @@ public class AppDbContext : DbContext
             .WithMany()
             .HasForeignKey(h => h.UsuarioId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BugMedia>()
+            .HasOne(m => m.Bug)
+            .WithMany(b => b.BugMedias)
+            .HasForeignKey(m => m.BugId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

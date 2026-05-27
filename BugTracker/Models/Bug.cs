@@ -44,4 +44,5 @@ public class Bug
     public int? AtribuidoParaId { get; set; }
     public Usuario? AtribuidoPara { get; set; }
     public ICollection<BugTag> BugTags { get; set; } = new List<BugTag>();
+    public ICollection<BugMedia> BugMedias { get; set; } = new List<BugMedia>();
 }

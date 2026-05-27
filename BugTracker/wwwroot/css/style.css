@@ -305,15 +305,6 @@
 [data-bs-theme="dark"] .btn-outline-secondary { color: #8b949e; border-color: #30363d; }
 [data-bs-theme="dark"] .btn-outline-secondary:hover { background-color: #21262d; color: #e6edf3; }
 
-/* ===== CARGO BADGE ===== */
-.cargo-badge {
-    display: inline-block;
-    padding: 0.15em 0.55em;
-    font-size: 0.68rem;
-    font-weight: 600;
-    border-radius: 99px;
-    line-height: 1.5;
-}
 
 /* ===== TIMELINE ===== */
 .timeline-item {
@@ -344,6 +335,36 @@
 [data-bs-theme="light"] .timeline-dot { border: 2px solid #ffffff; }
 .timeline-content { flex: 1; }
 
+/* ===== TAG CHIPS ===== */
+.tag-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 8px 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    line-height: 1.5;
+    white-space: nowrap;
+    vertical-align: middle;
+}
+[data-bs-theme="dark"] .tag-chip {
+    background: #21262d;
+    color: #c9d1d9;
+    border: 1px solid #30363d;
+}
+[data-bs-theme="light"] .tag-chip {
+    background: #f1f3f5;
+    color: #374151;
+    border: 1px solid #dee2e6;
+}
+.tag-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
 /* ===== PASSOS DE REPRODUÇÃO ===== */
 .passo-item {
     padding: 0.4rem 0.6rem;
@@ -353,6 +374,51 @@
 [data-bs-theme="dark"] .passo-item:hover { background: rgba(255,255,255,0.04); }
 [data-bs-theme="light"] .passo-item:hover { background: rgba(0,0,0,0.03); }
 .passo-done { opacity: 0.6; }
+
+/* ===== MEDIA GALLERY ===== */
+.media-thumb {
+    width: 80px;
+    height: 80px;
+    object-fit: cover;
+    border-radius: 6px;
+    display: block;
+}
+.media-thumb-wrap {
+    position: relative;
+    display: inline-block;
+}
+.media-del-btn {
+    position: absolute;
+    top: -7px;
+    right: -7px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: none;
+    background: #ef4444;
+    color: #fff;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    padding: 0;
+    z-index: 1;
+}
+.media-del-btn:hover { background: #dc2626; }
+.media-video-thumb {
+    width: 80px;
+    height: 80px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    cursor: pointer;
+}
+[data-bs-theme="dark"] .media-video-thumb { background: #21262d; color: #8b949e; }
+[data-bs-theme="light"] .media-video-thumb { background: #e9ecef; color: #6c757d; }
 
 /* ===== SCROLLBAR (dark only) ===== */
 [data-bs-theme="dark"] ::-webkit-scrollbar { width: 8px; height: 8px; }

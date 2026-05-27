@@ -102,6 +102,7 @@ public class BugResponseDTO
     public string ReportadoPorCargo { get; set; } = string.Empty;
     public List<TagResponseDTO> Tags { get; set; } = new();
     public List<PassoReproducaoDTO>? PassosReproducao { get; set; }
+    public List<BugMediaDTO> Media { get; set; } = new();
     public int DiasAberto { get; set; }
     public int TotalComentarios { get; set; }
 }

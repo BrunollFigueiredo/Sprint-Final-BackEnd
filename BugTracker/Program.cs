@@ -10,6 +10,8 @@ using BugTracker.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
+builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 55 * 1024 * 1024);
+
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 
@@ -80,6 +82,8 @@ builder.Services.AddScoped<IComentarioService, ComentarioService>();
 builder.Services.AddScoped<ITagRepository, TagRepository>();
 builder.Services.AddScoped<ITagService, TagService>();
 builder.Services.AddScoped<IBugHistoricoRepository, BugHistoricoRepository>();
+builder.Services.AddHttpClient("supabase");
+builder.Services.AddScoped<ISupabaseStorageService, SupabaseStorageService>();
 
 var app = builder.Build();
 
@@ -109,8 +113,27 @@ using (var scope = app.Services.CreateScope())
     var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     try
     {
-        db.Database.Migrate();
-        logger.LogInformation("Migrations aplicadas com sucesso.");
+        // Remove migrations history que pode ter ficado de tentativas anteriores
+        // sem as tabelas reais, causando EnsureCreated a não criar o schema
+        db.Database.ExecuteSqlRaw("DROP TABLE IF EXISTS `__EFMigrationsHistory`");
+        db.Database.EnsureCreated();
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS `BugMedias` (
+                `Id` int NOT NULL AUTO_INCREMENT,
+                `BugId` int NOT NULL,
+                `NomeOriginal` varchar(255) CHARACTER SET utf8mb4 NOT NULL,
+                `StoragePath` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+                `Url` varchar(500) CHARACTER SET utf8mb4 NOT NULL,
+                `ContentType` varchar(100) CHARACTER SET utf8mb4 NOT NULL,
+                `TamanhoBytes` bigint NOT NULL,
+                `UploadedByUserId` int NOT NULL,
+                `CriadoEm` datetime(6) NOT NULL,
+                PRIMARY KEY (`Id`),
+                KEY `IX_BugMedias_BugId` (`BugId`),
+                CONSTRAINT `FK_BugMedias_Bugs_BugId` FOREIGN KEY (`BugId`) REFERENCES `Bugs` (`Id`) ON DELETE CASCADE
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+        ");
+        logger.LogInformation("Schema do banco criado/verificado com sucesso.");
 
         if (!db.Usuarios.Any(u => u.Perfil == "Admin"))
         {

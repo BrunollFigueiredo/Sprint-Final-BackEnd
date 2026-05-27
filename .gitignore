@@ -19,3 +19,6 @@ bin_check/
 # dotnet
 *.swp
 .DS_Store
+
+# Credenciais — não versionar (use appsettings.Example.json como referência)
+BugTracker/appsettings.json

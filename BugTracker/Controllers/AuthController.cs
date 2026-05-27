@@ -14,7 +14,11 @@ public class AuthController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> Register([FromBody] RegisterDTO dto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!ModelState.IsValid)
+        {
+            var erro = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage ?? "Dados inválidos.";
+            return BadRequest(new { mensagem = erro });
+        }
         if (!dto.AceitouTermos)
             return BadRequest(new { mensagem = "Você deve aceitar os Termos de Uso e a Política de Privacidade para criar uma conta." });
         var result = await _authService.RegisterAsync(dto);
@@ -25,7 +29,11 @@ public class AuthController : ControllerBase
     [HttpPost("login")]
     public async Task<IActionResult> Login([FromBody] LoginDTO dto)
     {
-        if (!ModelState.IsValid) return BadRequest(ModelState);
+        if (!ModelState.IsValid)
+        {
+            var erro = ModelState.Values.SelectMany(v => v.Errors).FirstOrDefault()?.ErrorMessage ?? "Dados inválidos.";
+            return BadRequest(new { mensagem = erro });
+        }
         var result = await _authService.LoginAsync(dto);
         if (result == null) return Unauthorized(new { mensagem = "Email ou senha inválidos." });
         return Ok(result);

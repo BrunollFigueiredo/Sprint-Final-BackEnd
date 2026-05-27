@@ -209,6 +209,16 @@ public class BugService : IBugService
         PassosReproducao = b.PassosReproducao != null
             ? JsonSerializer.Deserialize<List<PassoReproducaoDTO>>(b.PassosReproducao)
             : null,
+        Media = b.BugMedias.Select(m => new BugMediaDTO
+        {
+            Id = m.Id,
+            NomeOriginal = m.NomeOriginal,
+            Url = m.Url,
+            ContentType = m.ContentType,
+            TamanhoBytes = m.TamanhoBytes,
+            UploadedByUserId = m.UploadedByUserId,
+            CriadoEm = m.CriadoEm
+        }).ToList(),
         DiasAberto = (int)(DateTime.UtcNow - b.CriadoEm).TotalDays
     };
 }
