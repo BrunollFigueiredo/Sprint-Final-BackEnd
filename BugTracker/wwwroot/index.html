@@ -91,6 +91,7 @@
                         <i class="bi bi-person-circle me-1"></i>
                         <span id="userNome"></span>
                         <span class="badge bg-warning text-dark ms-1" id="userPerfil"></span>
+                        <span class="cargo-badge ms-1" id="userCargo" style="background:rgba(6,182,212,0.15);color:#67e8f9;border:1px solid rgba(6,182,212,0.3)"></span>
                     </span>
                     <button class="btn btn-outline-light btn-sm" id="themeToggle" onclick="toggleTheme()" title="Alternar tema">
                         <i class="bi bi-sun" id="themeIcon"></i>
@@ -110,6 +111,7 @@
                     <button class="app-tab" id="nav-bugs" onclick="showSection('bugs', this)"><i class="bi bi-bug"></i>Bugs</button>
                     <button class="app-tab" id="nav-projetos" onclick="showSection('projetos', this)"><i class="bi bi-folder"></i>Projetos</button>
                     <button class="app-tab admin-only d-none" id="nav-usuarios" onclick="showSection('usuarios', this)"><i class="bi bi-people"></i>Usuários</button>
+                    <button class="app-tab admin-only d-none" id="nav-tags" onclick="showSection('tags', this)"><i class="bi bi-tags"></i>Tags</button>
                 </div>
             </div>
         </div>
@@ -460,6 +462,7 @@
                                         <th>Nome</th>
                                         <th>Email</th>
                                         <th>Perfil</th>
+                                        <th>Cargo</th>
                                         <th>Cadastrado em</th>
                                         <th></th>
                                     </tr>
@@ -468,6 +471,54 @@
                             </table>
                     </div>
         </div>
+
+                    <!-- Tags Section -->
+                    <div id="tagsSection" class="d-none">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h4><i class="bi bi-tags me-2"></i>Tags</h4>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <div class="card">
+                                    <div class="card-header fw-semibold"><i class="bi bi-plus-circle me-2 text-primary"></i>Nova Tag</div>
+                                    <div class="card-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Nome *</label>
+                                            <input type="text" id="tagNome" class="form-control" placeholder="Ex: Arte, Crash, UI">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Cor</label>
+                                            <input type="color" id="tagCor" class="form-control form-control-color" value="#06b6d4">
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">Departamento</label>
+                                            <select id="tagDepartamento" class="form-select">
+                                                <option value="Geral">Geral</option>
+                                                <option value="Arte">Arte</option>
+                                                <option value="Audio">Áudio</option>
+                                                <option value="Gameplay">Gameplay</option>
+                                                <option value="UI">UI/UX</option>
+                                                <option value="Performance">Performance</option>
+                                                <option value="Programacao">Programação</option>
+                                                <option value="QA">QA</option>
+                                            </select>
+                                        </div>
+                                        <button class="btn btn-primary w-100" onclick="saveTag()">
+                                            <i class="bi bi-plus-lg me-1"></i>Criar Tag
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="card">
+                                    <div class="card-header fw-semibold"><i class="bi bi-collection me-2 text-secondary"></i>Tags Cadastradas</div>
+                                    <div class="card-body" id="tagsAdminList">
+                                        <p class="text-muted">Carregando...</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
     </div>
 
     <!-- Modal: Bug -->
@@ -508,6 +559,17 @@
                             <div class="mb-3">
                                 <label class="form-label">Detalhes do Ambiente</label>
                                 <textarea id="bugDetalhesAmbiente" class="form-control" rows="2" placeholder="Ex: GPU RTX 3060, Resolução 1920x1080, Windows 11, Configuração Gráfica Alta"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-tags me-1"></i>Tags</label>
+                                <div id="tagsCheckboxContainer" class="p-2 border rounded d-flex flex-wrap gap-2" style="min-height:40px"></div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label"><i class="bi bi-list-check me-1"></i>Checklist de Reprodução</label>
+                                <div id="passosContainer" class="mb-2"></div>
+                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="addPasso()">
+                                    <i class="bi bi-plus me-1"></i>Adicionar Passo
+                                </button>
                             </div>
                         </div>
                         <!-- Coluna direita -->
@@ -694,10 +756,15 @@
                         <div class="col-auto"><small class="text-muted"><i class="bi bi-tools me-1"></i><span id="detailVersaoJogo"></span></small></div>
                         <div class="col-auto" id="detailBuildRow"><small class="text-muted"><i class="bi bi-hash me-1"></i>Build <span id="detailNumeroBuild"></span></small></div>
                     </div>
+                    <!-- Stats bar: dias aberto + tags -->
+                    <div class="d-flex align-items-center gap-3 mb-3 flex-wrap">
+                        <small class="text-muted"><i class="bi bi-clock me-1"></i><span id="detailDiasAberto"></span></small>
+                        <div id="detailTags" class="d-flex flex-wrap gap-1"></div>
+                    </div>
                     <div class="row g-3 mb-3">
                         <div class="col-md-6">
-                            <small class="text-muted d-block"><i class="bi bi-person me-1"></i>Reportado por <strong id="detailReportado"></strong></small>
-                            <small class="text-muted d-block"><i class="bi bi-person-check me-1"></i>Atribuído a <strong id="detailAtribuido"></strong></small>
+                            <small class="text-muted d-block"><i class="bi bi-person me-1"></i>Reportado por <strong id="detailReportado"></strong> <span id="detailReportadoCargo" class="text-muted" style="font-size:0.8em"></span></small>
+                            <small class="text-muted d-block"><i class="bi bi-person-check me-1"></i>Atribuído a <strong id="detailAtribuido"></strong> <span id="detailAtribuidoCargo" class="text-muted" style="font-size:0.8em"></span></small>
                             <small class="text-muted d-block"><i class="bi bi-calendar me-1"></i>Criado em <span id="detailData"></span></small>
                         </div>
                         <div class="col-md-6">
@@ -727,8 +794,20 @@
                         <small class="text-muted"><i class="bi bi-pc-display me-1"></i><strong>Ambiente:</strong> <span id="detailAmbiente"></span></small>
                     </div>
 
+                    <!-- Checklist de Reprodução -->
+                    <div id="detailPassosSection" class="mb-3 d-none">
+                        <small class="text-muted fw-semibold d-block mb-2"><i class="bi bi-list-check me-1"></i>Checklist de Reprodução</small>
+                        <div id="detailPassos"></div>
+                    </div>
+
+                    <!-- Timeline de Status -->
+                    <div id="detailTimelineSection" class="mb-3 d-none">
+                        <small class="text-muted fw-semibold d-block mb-2"><i class="bi bi-clock-history me-1"></i>Histórico de Status</small>
+                        <div id="detailTimeline"></div>
+                    </div>
+
                     <hr>
-                    <h6><i class="bi bi-chat-dots me-2"></i>Comentários</h6>
+                    <h6><i class="bi bi-chat-dots me-2"></i>Comentários <span class="badge bg-secondary rounded-pill ms-1" id="detailComentariosCount">0</span></h6>
                     <div id="comentariosLista" class="mb-3" style="max-height:300px; overflow-y:auto;"></div>
                     <div class="input-group">
                         <input type="text" id="novoComentario" class="form-control" placeholder="Escreva um comentário..." onkeydown="if(event.key==='Enter') postComentario()">

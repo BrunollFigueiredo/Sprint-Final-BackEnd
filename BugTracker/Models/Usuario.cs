@@ -13,6 +13,8 @@ public class Usuario
     public string SenhaHash { get; set; } = string.Empty;
     [Required]
     public string Perfil { get; set; } = "Dev";
+    [MaxLength(50)]
+    public string Cargo { get; set; } = "Programador"; // Lider, Programador, Designer, Artista, SoundDesigner, QA
     public bool AceitouTermos { get; set; } = false;
     public DateTime? AceitouTermosEm { get; set; }
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;

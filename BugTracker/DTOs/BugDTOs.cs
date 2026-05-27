@@ -4,6 +4,8 @@ namespace BugTracker.DTOs;
 
 public class BugCreateDTO
 {
+    public List<int>? TagIds { get; set; }
+    public List<PassoReproducaoDTO>? PassosReproducao { get; set; }
     [Required, MaxLength(200)]
     public string Titulo { get; set; } = string.Empty;
     [MaxLength(2000)]
@@ -38,6 +40,8 @@ public class BugCreateDTO
 
 public class BugUpdateDTO
 {
+    public List<int>? TagIds { get; set; }
+    public List<PassoReproducaoDTO>? PassosReproducao { get; set; }
     [MaxLength(200)]
     public string? Titulo { get; set; }
     [MaxLength(2000)]
@@ -94,4 +98,10 @@ public class BugResponseDTO
     public string ReportadoPorNome { get; set; } = string.Empty;
     public int? AtribuidoParaId { get; set; }
     public string? AtribuidoParaNome { get; set; }
+    public string? AtribuidoParaCargo { get; set; }
+    public string ReportadoPorCargo { get; set; } = string.Empty;
+    public List<TagResponseDTO> Tags { get; set; } = new();
+    public List<PassoReproducaoDTO>? PassosReproducao { get; set; }
+    public int DiasAberto { get; set; }
+    public int TotalComentarios { get; set; }
 }

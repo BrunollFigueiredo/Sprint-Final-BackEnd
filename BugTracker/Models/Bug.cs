@@ -34,6 +34,7 @@ public class Bug
     public string? ResultadoObtido { get; set; }
     [MaxLength(500)]
     public string? DetalhesAmbiente { get; set; }
+    public string? PassosReproducao { get; set; } // JSON array de PassoReproducaoDTO
     public DateTime CriadoEm { get; set; } = DateTime.UtcNow;
     public DateTime? AtualizadoEm { get; set; }
     public int ProjetoId { get; set; }
@@ -42,4 +43,5 @@ public class Bug
     public Usuario ReportadoPor { get; set; } = null!;
     public int? AtribuidoParaId { get; set; }
     public Usuario? AtribuidoPara { get; set; }
+    public ICollection<BugTag> BugTags { get; set; } = new List<BugTag>();
 }

@@ -305,6 +305,55 @@
 [data-bs-theme="dark"] .btn-outline-secondary { color: #8b949e; border-color: #30363d; }
 [data-bs-theme="dark"] .btn-outline-secondary:hover { background-color: #21262d; color: #e6edf3; }
 
+/* ===== CARGO BADGE ===== */
+.cargo-badge {
+    display: inline-block;
+    padding: 0.15em 0.55em;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: 99px;
+    line-height: 1.5;
+}
+
+/* ===== TIMELINE ===== */
+.timeline-item {
+    display: flex;
+    gap: 0.75rem;
+    position: relative;
+    padding-bottom: 0.75rem;
+}
+.timeline-item:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 14px;
+    bottom: 0;
+    width: 1px;
+}
+[data-bs-theme="dark"] .timeline-item:not(:last-child)::before { background: #30363d; }
+[data-bs-theme="light"] .timeline-item:not(:last-child)::before { background: #dee2e6; }
+.timeline-dot {
+    width: 13px;
+    height: 13px;
+    border-radius: 50%;
+    background: #06b6d4;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+[data-bs-theme="dark"] .timeline-dot { border: 2px solid #161b22; }
+[data-bs-theme="light"] .timeline-dot { border: 2px solid #ffffff; }
+.timeline-content { flex: 1; }
+
+/* ===== PASSOS DE REPRODUÇÃO ===== */
+.passo-item {
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    transition: background 0.15s;
+}
+[data-bs-theme="dark"] .passo-item:hover { background: rgba(255,255,255,0.04); }
+[data-bs-theme="light"] .passo-item:hover { background: rgba(0,0,0,0.03); }
+.passo-done { opacity: 0.6; }
+
 /* ===== SCROLLBAR (dark only) ===== */
 [data-bs-theme="dark"] ::-webkit-scrollbar { width: 8px; height: 8px; }
 [data-bs-theme="dark"] ::-webkit-scrollbar-track { background: #0d1117; }

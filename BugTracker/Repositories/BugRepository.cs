@@ -14,6 +14,7 @@ public class BugRepository : IBugRepository
             .Include(b => b.Projeto)
             .Include(b => b.ReportadoPor)
             .Include(b => b.AtribuidoPara)
+            .Include(b => b.BugTags).ThenInclude(bt => bt.Tag)
             .ToListAsync();
 
     public async Task<Bug?> GetByIdAsync(int id) =>
@@ -21,6 +22,7 @@ public class BugRepository : IBugRepository
             .Include(b => b.Projeto)
             .Include(b => b.ReportadoPor)
             .Include(b => b.AtribuidoPara)
+            .Include(b => b.BugTags).ThenInclude(bt => bt.Tag)
             .FirstOrDefaultAsync(b => b.Id == id);
 
     public async Task<IEnumerable<Bug>> GetByProjetoIdAsync(int projetoId) =>
@@ -28,6 +30,7 @@ public class BugRepository : IBugRepository
             .Include(b => b.Projeto)
             .Include(b => b.ReportadoPor)
             .Include(b => b.AtribuidoPara)
+            .Include(b => b.BugTags).ThenInclude(bt => bt.Tag)
             .Where(b => b.ProjetoId == projetoId)
             .ToListAsync();
 

@@ -32,6 +32,7 @@ namespace BugTracker.Migrations
                 b.Property<string>("FrequenciaReproducao").HasMaxLength(50).HasColumnType("varchar(50)");
                 b.Property<string>("Milestone").HasMaxLength(100).HasColumnType("varchar(100)");
                 b.Property<string>("NumeroBuild").HasMaxLength(30).HasColumnType("varchar(30)");
+                b.Property<string>("PassosReproducao").HasColumnType("longtext");
                 b.Property<string>("Plataforma").HasMaxLength(50).HasColumnType("varchar(50)");
                 b.Property<int>("ProjetoId").HasColumnType("int");
                 b.Property<int>("ReportadoPorId").HasColumnType("int");
@@ -47,6 +48,29 @@ namespace BugTracker.Migrations
                 b.HasIndex("ProjetoId");
                 b.HasIndex("ReportadoPorId");
                 b.ToTable("Bugs");
+            });
+
+            modelBuilder.Entity("BugTracker.Models.BugHistorico", b =>
+            {
+                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                b.Property<int>("BugId").HasColumnType("int");
+                b.Property<DateTime>("CriadoEm").HasColumnType("datetime(6)");
+                b.Property<string>("StatusAnterior").IsRequired().HasColumnType("longtext");
+                b.Property<string>("StatusNovo").IsRequired().HasColumnType("longtext");
+                b.Property<int>("UsuarioId").HasColumnType("int");
+                b.HasKey("Id");
+                b.HasIndex("BugId");
+                b.HasIndex("UsuarioId");
+                b.ToTable("BugHistoricos");
+            });
+
+            modelBuilder.Entity("BugTracker.Models.BugTag", b =>
+            {
+                b.Property<int>("BugId").HasColumnType("int");
+                b.Property<int>("TagId").HasColumnType("int");
+                b.HasKey("BugId", "TagId");
+                b.HasIndex("TagId");
+                b.ToTable("BugTags");
             });
 
             modelBuilder.Entity("BugTracker.Models.Comentario", b =>
@@ -75,11 +99,22 @@ namespace BugTracker.Migrations
                 b.ToTable("Projetos");
             });
 
+            modelBuilder.Entity("BugTracker.Models.Tag", b =>
+            {
+                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
+                b.Property<string>("Cor").IsRequired().HasMaxLength(7).HasColumnType("varchar(7)");
+                b.Property<string>("Departamento").IsRequired().HasMaxLength(50).HasColumnType("varchar(50)");
+                b.Property<string>("Nome").IsRequired().HasMaxLength(50).HasColumnType("varchar(50)");
+                b.HasKey("Id");
+                b.ToTable("Tags");
+            });
+
             modelBuilder.Entity("BugTracker.Models.Usuario", b =>
             {
                 b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("int");
                 b.Property<bool>("AceitouTermos").HasColumnType("tinyint(1)");
                 b.Property<DateTime?>("AceitouTermosEm").HasColumnType("datetime(6)");
+                b.Property<string>("Cargo").IsRequired().HasMaxLength(50).HasColumnType("varchar(50)").HasDefaultValue("Programador");
                 b.Property<DateTime>("CriadoEm").HasColumnType("datetime(6)");
                 b.Property<string>("Email").IsRequired().HasMaxLength(150).HasColumnType("varchar(150)");
                 b.Property<string>("Nome").IsRequired().HasMaxLength(100).HasColumnType("varchar(100)");
@@ -106,6 +141,30 @@ namespace BugTracker.Migrations
                 b.Navigation("ReportadoPor");
             });
 
+            modelBuilder.Entity("BugTracker.Models.BugHistorico", b =>
+            {
+                b.HasOne("BugTracker.Models.Bug", "Bug")
+                    .WithMany().HasForeignKey("BugId")
+                    .OnDelete(DeleteBehavior.Cascade).IsRequired();
+                b.HasOne("BugTracker.Models.Usuario", "Usuario")
+                    .WithMany().HasForeignKey("UsuarioId")
+                    .OnDelete(DeleteBehavior.Restrict).IsRequired();
+                b.Navigation("Bug");
+                b.Navigation("Usuario");
+            });
+
+            modelBuilder.Entity("BugTracker.Models.BugTag", b =>
+            {
+                b.HasOne("BugTracker.Models.Bug", "Bug")
+                    .WithMany("BugTags").HasForeignKey("BugId")
+                    .OnDelete(DeleteBehavior.Cascade).IsRequired();
+                b.HasOne("BugTracker.Models.Tag", "Tag")
+                    .WithMany("BugTags").HasForeignKey("TagId")
+                    .OnDelete(DeleteBehavior.Cascade).IsRequired();
+                b.Navigation("Bug");
+                b.Navigation("Tag");
+            });
+
             modelBuilder.Entity("BugTracker.Models.Comentario", b =>
             {
                 b.HasOne("BugTracker.Models.Bug", "Bug")
@@ -119,6 +178,9 @@ namespace BugTracker.Migrations
             });
 
             modelBuilder.Entity("BugTracker.Models.Projeto", b => { b.Navigation("Bugs"); });
+
+            modelBuilder.Entity("BugTracker.Models.Tag", b => { b.Navigation("BugTags"); });
+
             modelBuilder.Entity("BugTracker.Models.Usuario", b =>
             {
                 b.Navigation("BugsAtribuidos");

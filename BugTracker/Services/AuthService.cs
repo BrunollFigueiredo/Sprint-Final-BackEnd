@@ -32,6 +32,7 @@ public class AuthService : IAuthService
             Email = dto.Email,
             SenhaHash = BCrypt.Net.BCrypt.HashPassword(dto.Senha),
             Perfil = "Dev",
+            Cargo = "Programador",
             AceitouTermos = true,
             AceitouTermosEm = DateTime.UtcNow
         };
@@ -43,7 +44,8 @@ public class AuthService : IAuthService
             Token = GerarToken(usuario),
             Nome = usuario.Nome,
             Email = usuario.Email,
-            Perfil = usuario.Perfil
+            Perfil = usuario.Perfil,
+            Cargo = usuario.Cargo
         };
     }
 
@@ -59,7 +61,8 @@ public class AuthService : IAuthService
             Token = GerarToken(usuario),
             Nome = usuario.Nome,
             Email = usuario.Email,
-            Perfil = usuario.Perfil
+            Perfil = usuario.Perfil,
+            Cargo = usuario.Cargo
         };
     }
 

@@ -1,3 +1,4 @@
+using System.Text.Json;
 using BugTracker.DTOs;
 using BugTracker.Models;
 using BugTracker.Repositories;
@@ -9,12 +10,24 @@ public class BugService : IBugService
     private readonly IBugRepository _repo;
     private readonly IProjetoRepository _projetoRepo;
     private readonly IUsuarioRepository _usuarioRepo;
+    private readonly ITagRepository _tagRepo;
+    private readonly IBugHistoricoRepository _historicoRepo;
+    private readonly IComentarioRepository _comentarioRepo;
 
-    public BugService(IBugRepository repo, IProjetoRepository projetoRepo, IUsuarioRepository usuarioRepo)
+    public BugService(
+        IBugRepository repo,
+        IProjetoRepository projetoRepo,
+        IUsuarioRepository usuarioRepo,
+        ITagRepository tagRepo,
+        IBugHistoricoRepository historicoRepo,
+        IComentarioRepository comentarioRepo)
     {
         _repo = repo;
         _projetoRepo = projetoRepo;
         _usuarioRepo = usuarioRepo;
+        _tagRepo = tagRepo;
+        _historicoRepo = historicoRepo;
+        _comentarioRepo = comentarioRepo;
     }
 
     public async Task<IEnumerable<BugResponseDTO>> GetAllAsync()
@@ -26,7 +39,11 @@ public class BugService : IBugService
     public async Task<BugResponseDTO?> GetByIdAsync(int id)
     {
         var b = await _repo.GetByIdAsync(id);
-        return b == null ? null : ToDTO(b);
+        if (b == null) return null;
+        var dto = ToDTO(b);
+        var comentarios = await _comentarioRepo.GetByBugIdAsync(id);
+        dto.TotalComentarios = comentarios.Count();
+        return dto;
     }
 
     public async Task<IEnumerable<BugResponseDTO>> GetByProjetoIdAsync(int projetoId)
@@ -65,8 +82,18 @@ public class BugService : IBugService
             BloqueiaLancamento = dto.BloqueiaLancamento,
             ResultadoEsperado = dto.ResultadoEsperado,
             ResultadoObtido = dto.ResultadoObtido,
-            DetalhesAmbiente = dto.DetalhesAmbiente
+            DetalhesAmbiente = dto.DetalhesAmbiente,
+            PassosReproducao = dto.PassosReproducao != null
+                ? JsonSerializer.Serialize(dto.PassosReproducao)
+                : null
         };
+
+        if (dto.TagIds?.Count > 0)
+        {
+            var tags = await _tagRepo.GetByIdsAsync(dto.TagIds);
+            bug.BugTags = tags.Select(t => new BugTag { Tag = t }).ToList();
+        }
+
         await _repo.CreateAsync(bug);
         var created = await _repo.GetByIdAsync(bug.Id);
         return ToDTO(created!);
@@ -86,6 +113,8 @@ public class BugService : IBugService
         var severidadesValidas = new[] { "Baixa", "Media", "Alta", "Critica" };
         var statusValidos = new[] { "Aberto", "EmAndamento", "Resolvido", "Fechado", "NaoReproduzivel", "NaoCorrigir", "Duplicado" };
 
+        var statusAnterior = b.Status;
+
         if (dto.Titulo != null) b.Titulo = dto.Titulo;
         if (dto.Descricao != null) b.Descricao = dto.Descricao;
         if (dto.Severidade != null && severidadesValidas.Contains(dto.Severidade)) b.Severidade = dto.Severidade;
@@ -102,9 +131,34 @@ public class BugService : IBugService
         if (dto.ResultadoEsperado != null) b.ResultadoEsperado = dto.ResultadoEsperado;
         if (dto.ResultadoObtido != null) b.ResultadoObtido = dto.ResultadoObtido;
         if (dto.DetalhesAmbiente != null) b.DetalhesAmbiente = dto.DetalhesAmbiente;
-        b.AtualizadoEm = DateTime.UtcNow;
+        if (dto.PassosReproducao != null)
+            b.PassosReproducao = JsonSerializer.Serialize(dto.PassosReproducao);
 
+        if (dto.TagIds != null)
+        {
+            b.BugTags.Clear();
+            if (dto.TagIds.Count > 0)
+            {
+                var tags = await _tagRepo.GetByIdsAsync(dto.TagIds);
+                foreach (var tag in tags)
+                    b.BugTags.Add(new BugTag { BugId = b.Id, TagId = tag.Id, Tag = tag });
+            }
+        }
+
+        b.AtualizadoEm = DateTime.UtcNow;
         await _repo.UpdateAsync(b);
+
+        if (dto.Status != null && statusValidos.Contains(dto.Status) && b.Status != statusAnterior)
+        {
+            await _historicoRepo.CreateAsync(new BugHistorico
+            {
+                BugId = b.Id,
+                StatusAnterior = statusAnterior,
+                StatusNovo = b.Status,
+                UsuarioId = userId
+            });
+        }
+
         var updated = await _repo.GetByIdAsync(id);
         return ToDTO(updated!);
     }
@@ -141,7 +195,20 @@ public class BugService : IBugService
         ProjetoNome = b.Projeto?.Nome ?? "",
         ReportadoPorId = b.ReportadoPorId,
         ReportadoPorNome = b.ReportadoPor?.Nome ?? "",
+        ReportadoPorCargo = b.ReportadoPor?.Cargo ?? "",
         AtribuidoParaId = b.AtribuidoParaId,
-        AtribuidoParaNome = b.AtribuidoPara?.Nome
+        AtribuidoParaNome = b.AtribuidoPara?.Nome,
+        AtribuidoParaCargo = b.AtribuidoPara?.Cargo,
+        Tags = b.BugTags.Select(bt => new TagResponseDTO
+        {
+            Id = bt.Tag.Id,
+            Nome = bt.Tag.Nome,
+            Cor = bt.Tag.Cor,
+            Departamento = bt.Tag.Departamento
+        }).ToList(),
+        PassosReproducao = b.PassosReproducao != null
+            ? JsonSerializer.Deserialize<List<PassoReproducaoDTO>>(b.PassosReproducao)
+            : null,
+        DiasAberto = (int)(DateTime.UtcNow - b.CriadoEm).TotalDays
     };
 }

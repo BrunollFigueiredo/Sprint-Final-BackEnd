@@ -11,6 +11,9 @@ public class AppDbContext : DbContext
     public DbSet<Projeto> Projetos { get; set; }
     public DbSet<Bug> Bugs { get; set; }
     public DbSet<Comentario> Comentarios { get; set; }
+    public DbSet<Tag> Tags { get; set; }
+    public DbSet<BugTag> BugTags { get; set; }
+    public DbSet<BugHistorico> BugHistoricos { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -46,6 +49,33 @@ public class AppDbContext : DbContext
             .HasOne(c => c.Usuario)
             .WithMany()
             .HasForeignKey(c => c.UsuarioId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<BugTag>()
+            .HasKey(bt => new { bt.BugId, bt.TagId });
+
+        modelBuilder.Entity<BugTag>()
+            .HasOne(bt => bt.Bug)
+            .WithMany(b => b.BugTags)
+            .HasForeignKey(bt => bt.BugId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BugTag>()
+            .HasOne(bt => bt.Tag)
+            .WithMany(t => t.BugTags)
+            .HasForeignKey(bt => bt.TagId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BugHistorico>()
+            .HasOne(h => h.Bug)
+            .WithMany()
+            .HasForeignKey(h => h.BugId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<BugHistorico>()
+            .HasOne(h => h.Usuario)
+            .WithMany()
+            .HasForeignKey(h => h.UsuarioId)
             .OnDelete(DeleteBehavior.Restrict);
     }
 }

@@ -1,5 +1,6 @@
 const API = '';
 let currentUser = null;
+let allTags = [];
 
 // ---- Theme ----
 function toggleTheme() {
@@ -38,7 +39,7 @@ async function login() {
     if (res.ok) {
         const data = await res.json();
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil }));
+        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
         initApp();
     } else {
         const err = await res.json();
@@ -59,7 +60,7 @@ async function register() {
     if (res.ok) {
         const data = await res.json();
         localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil }));
+        localStorage.setItem('user', JSON.stringify({ id: data.id, nome: data.nome, email: data.email, perfil: data.perfil, cargo: data.cargo }));
         initApp();
     } else {
         try {
@@ -106,6 +107,8 @@ function initApp() {
     document.getElementById('mainApp').classList.remove('d-none');
     document.getElementById('userNome').textContent = currentUser.nome;
     document.getElementById('userPerfil').textContent = currentUser.perfil;
+    const cargoEl = document.getElementById('userCargo');
+    if (cargoEl) cargoEl.textContent = currentUser.cargo || '';
     updateThemeIcon(document.documentElement.getAttribute('data-bs-theme') || 'dark');
 
     document.querySelectorAll('.admin-only').forEach(el => el.classList.add('d-none'));
@@ -120,6 +123,7 @@ function initApp() {
 
     loadDashboard();
     loadProjetosSelect();
+    loadTags();
 }
 
 // ---- API Helper ----
@@ -138,9 +142,12 @@ async function apiFetch(url, method = 'GET', body = null, auth = true) {
 
 // ---- Navigation ----
 function showSection(section, el) {
-    ['dashboard', 'bugs', 'projetos', 'usuarios'].forEach(s =>
-        document.getElementById(`${s}Section`).classList.add('d-none'));
-    document.getElementById(`${section}Section`).classList.remove('d-none');
+    ['dashboard', 'bugs', 'projetos', 'usuarios', 'tags'].forEach(s => {
+        const sec = document.getElementById(`${s}Section`);
+        if (sec) sec.classList.add('d-none');
+    });
+    const target = document.getElementById(`${section}Section`);
+    if (target) target.classList.remove('d-none');
 
     document.querySelectorAll('.app-tab').forEach(e => e.classList.remove('active'));
     if (el) el.classList.add('active');
@@ -150,6 +157,7 @@ function showSection(section, el) {
     if (section === 'projetos') loadProjetos();
     if (section === 'usuarios') loadUsuarios();
     if (section === 'bugs') loadBugs();
+    if (section === 'tags') loadTagsAdmin();
 }
 
 // ---- Toast ----
@@ -159,6 +167,52 @@ function showToast(msg, type = 'success') {
     toast.className = `toast align-items-center border-0 text-white bg-${type}`;
     toastMsg.textContent = msg;
     new bootstrap.Toast(toast, { delay: 3000 }).show();
+}
+
+// ---- Tags ----
+async function loadTags() {
+    const res = await apiFetch('/api/tags');
+    if (!res.ok) return;
+    allTags = await res.json();
+}
+
+async function loadTagsAdmin() {
+    await loadTags();
+    const container = document.getElementById('tagsAdminList');
+    if (!container) return;
+    if (allTags.length === 0) {
+        container.innerHTML = '<p class="text-muted">Nenhuma tag cadastrada.</p>';
+        return;
+    }
+    container.innerHTML = allTags.map(t => `
+        <div class="d-flex align-items-center gap-2 mb-2 p-2 border rounded">
+            <span class="badge rounded-pill" style="background:${t.cor};font-size:0.85rem">${escHtml(t.nome)}</span>
+            <small class="text-muted">${escHtml(t.departamento)}</small>
+            <button class="btn btn-sm btn-outline-danger ms-auto admin-only" onclick="deleteTag(${t.id})"><i class="bi bi-trash"></i></button>
+        </div>
+    `).join('');
+}
+
+async function saveTag() {
+    const nome = document.getElementById('tagNome')?.value?.trim();
+    const cor = document.getElementById('tagCor')?.value || '#6c757d';
+    const departamento = document.getElementById('tagDepartamento')?.value?.trim() || 'Geral';
+    if (!nome) return showToast('Nome da tag é obrigatório.', 'danger');
+    const res = await apiFetch('/api/tags', 'POST', { nome, cor, departamento });
+    if (res.ok) {
+        document.getElementById('tagNome').value = '';
+        showToast('Tag criada!');
+        loadTagsAdmin();
+    } else {
+        showToast('Erro ao criar tag.', 'danger');
+    }
+}
+
+async function deleteTag(id) {
+    if (!confirm('Excluir esta tag?')) return;
+    const res = await apiFetch(`/api/tags/${id}`, 'DELETE');
+    if (res.ok) { showToast('Tag excluída!'); loadTagsAdmin(); }
+    else showToast('Erro ao excluir tag.', 'danger');
 }
 
 // ---- Dashboard ----
@@ -244,7 +298,6 @@ function renderChartSeveridade(severidades) {
     const ctx = document.getElementById('chartSeveridade').getContext('2d');
     chartSeveridade = destroyChart(chartSeveridade);
     if (!severidades || severidades.length === 0) { emptyChartMsg(ctx, 'Nenhum bug registrado'); return; }
-    const cores = { Critica: '#dc3545', Alta: '#fd7e14', Media: '#ffc107', Baixa: '#28a745' };
     const coresSoft = { Critica: '#ef4444', Alta: '#f97316', Media: '#eab308', Baixa: '#22c55e' };
     chartSeveridade = new Chart(ctx, {
         type: 'bar',
@@ -255,11 +308,7 @@ function renderChartSeveridade(severidades) {
                 data: severidades.map(s => s.total),
                 backgroundColor: severidades.map(s => (coresSoft[s.severidade] || '#6c757d') + 'cc'),
                 borderColor: severidades.map(s => coresSoft[s.severidade] || '#6c757d'),
-                borderWidth: 1,
-                borderRadius: 8,
-                borderSkipped: false,
-                barPercentage: 0.5,
-                categoryPercentage: 0.7
+                borderWidth: 1, borderRadius: 8, borderSkipped: false, barPercentage: 0.5, categoryPercentage: 0.7
             }]
         },
         options: {
@@ -307,21 +356,10 @@ function renderChartPlataforma(plataformas) {
         type: 'bar',
         data: {
             labels: plataformas.map(p => p.plataforma),
-            datasets: [{
-                label: 'Bugs',
-                data: plataformas.map(p => p.total),
-                backgroundColor: '#06b6d4cc',
-                borderColor: '#06b6d4',
-                borderWidth: 1,
-                borderRadius: 6,
-                borderSkipped: false,
-                barPercentage: 0.5,
-                categoryPercentage: 0.75
-            }]
+            datasets: [{ label: 'Bugs', data: plataformas.map(p => p.total), backgroundColor: '#06b6d4cc', borderColor: '#06b6d4', borderWidth: 1, borderRadius: 6, borderSkipped: false, barPercentage: 0.5, categoryPercentage: 0.75 }]
         },
         options: {
-            indexAxis: 'y',
-            responsive: true,
+            indexAxis: 'y', responsive: true,
             layout: { padding: { left: 4, right: 12, top: 4, bottom: 4 } },
             plugins: { legend: { display: false } },
             scales: {
@@ -336,24 +374,16 @@ function renderChartTipo(tipos) {
     const ctx = document.getElementById('chartTipo').getContext('2d');
     chartTipo = destroyChart(chartTipo);
     if (!tipos || tipos.length === 0) { emptyChartMsg(ctx, 'Nenhum tipo informado'); return; }
-    const coresTipo = {
-        Crash: '#ef4444', Visual: '#8b5cf6', Audio: '#06b6d4', Gameplay: '#f97316',
-        Performance: '#eab308', UI: '#3b82f6', Localizacao: '#10b981', Outro: '#9ca3af'
-    };
+    const coresTipo = { Crash: '#ef4444', Visual: '#8b5cf6', Audio: '#06b6d4', Gameplay: '#f97316', Performance: '#eab308', UI: '#3b82f6', Localizacao: '#10b981', Outro: '#9ca3af' };
     chartTipo = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: tipos.map(t => tipoBugLabel(t.tipo)),
             datasets: [{
-                label: 'Bugs',
-                data: tipos.map(t => t.total),
+                label: 'Bugs', data: tipos.map(t => t.total),
                 backgroundColor: tipos.map(t => (coresTipo[t.tipo] || '#9ca3af') + 'cc'),
                 borderColor: tipos.map(t => coresTipo[t.tipo] || '#9ca3af'),
-                borderWidth: 1,
-                borderRadius: 8,
-                borderSkipped: false,
-                barPercentage: 0.5,
-                categoryPercentage: 0.7
+                borderWidth: 1, borderRadius: 8, borderSkipped: false, barPercentage: 0.5, categoryPercentage: 0.7
             }]
         },
         options: {
@@ -397,6 +427,13 @@ async function loadBugs() {
     renderBugs();
 }
 
+function renderTagBadges(tags) {
+    if (!tags || tags.length === 0) return '';
+    return tags.map(t =>
+        `<span class="badge rounded-pill me-1" style="background:${t.cor}20;color:${t.cor};border:1px solid ${t.cor}50;font-size:0.65rem">${escHtml(t.nome)}</span>`
+    ).join('');
+}
+
 function renderBugs() {
     const filtroBusca = (document.getElementById('filtroBusca').value || '').trim().toLowerCase();
     const filtroStatus = document.getElementById('filtroStatus').value;
@@ -410,7 +447,8 @@ function renderBugs() {
     if (filtroBusca) bugs = bugs.filter(b =>
         (b.titulo || '').toLowerCase().includes(filtroBusca) ||
         (b.descricao || '').toLowerCase().includes(filtroBusca) ||
-        (b.atribuidoParaNome || '').toLowerCase().includes(filtroBusca)
+        (b.atribuidoParaNome || '').toLowerCase().includes(filtroBusca) ||
+        (b.tags || []).some(t => t.nome.toLowerCase().includes(filtroBusca))
     );
     if (filtroStatus) bugs = bugs.filter(b => b.status === filtroStatus);
     if (filtroTipo) bugs = bugs.filter(b => b.tipoBug === filtroTipo);
@@ -434,10 +472,11 @@ function renderBugs() {
             </td>
             <td>
                 <div class="fw-semibold" style="font-size:0.9rem">${escHtml(b.titulo)}</div>
-                ${(b.tipoBug || b.milestone) ? `<div class="d-flex flex-wrap gap-1 mt-1">
+                <div class="d-flex flex-wrap gap-1 mt-1">
                     ${b.tipoBug ? `<span class="badge badge-soft-Fechado" style="font-size:0.68rem">${tipoBugLabel(b.tipoBug)}</span>` : ''}
                     ${b.milestone ? `<span class="badge" style="font-size:0.68rem;background:rgba(6,182,212,0.15);color:#67e8f9"><i class="bi bi-flag me-1"></i>${escHtml(b.milestone)}</span>` : ''}
-                </div>` : ''}
+                    ${renderTagBadges(b.tags)}
+                </div>
             </td>
             <td>
                 <span class="text-muted small">${escHtml(b.projetoNome)}</span>
@@ -446,7 +485,10 @@ function renderBugs() {
             <td>${b.plataforma ? `<span class="badge" style="background:rgba(139,148,158,0.15);color:#8b949e;font-size:0.72rem">${escHtml(b.plataforma)}</span>` : '<span class="text-muted">—</span>'}</td>
             <td><span class="badge badge-severidade-${b.severidade}" style="font-size:0.75rem">${b.severidade === 'Critica' ? 'Crítica' : b.severidade === 'Media' ? 'Média' : b.severidade}</span></td>
             <td><span class="badge badge-status-${b.status}" style="font-size:0.75rem">${statusLabel(b.status)}</span></td>
-            <td class="text-muted small">${b.atribuidoParaNome ? escHtml(b.atribuidoParaNome) : '—'}</td>
+            <td class="text-muted small">
+                ${b.atribuidoParaNome ? `<div>${escHtml(b.atribuidoParaNome)}</div>` : '—'}
+                ${b.atribuidoParaCargo ? `<small class="cargo-badge">${escHtml(b.atribuidoParaCargo)}</small>` : ''}
+            </td>
             <td onclick="event.stopPropagation()">
                 <div class="d-flex gap-1">
                     ${canEditBug(b) ? `<button class="btn-action" onclick="editBug(${b.id})" title="Editar"><i class="bi bi-pencil"></i></button>` : ''}
@@ -483,8 +525,57 @@ async function loadUsuariosSelect() {
     const select = document.getElementById('bugAtribuido');
     select.innerHTML = '<option value="">Nenhum</option>';
     usuarios.forEach(u => {
-        select.innerHTML += `<option value="${u.id}">${escHtml(u.nome)} (${u.perfil})</option>`;
+        select.innerHTML += `<option value="${u.id}">${escHtml(u.nome)} · ${u.cargo || u.perfil}</option>`;
     });
+}
+
+// ---- Passos de Reprodução ----
+let passosReproducao = [];
+
+function renderPassosModal() {
+    const container = document.getElementById('passosContainer');
+    if (!container) return;
+    if (passosReproducao.length === 0) {
+        container.innerHTML = '<p class="text-muted small">Nenhum passo adicionado. Clique em "+ Adicionar Passo".</p>';
+        return;
+    }
+    container.innerHTML = passosReproducao.map((p, i) => `
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <span class="badge bg-secondary rounded-circle" style="width:22px;height:22px;font-size:0.7rem">${i + 1}</span>
+            <input type="text" class="form-control form-control-sm" value="${escHtml(p.texto)}"
+                oninput="passosReproducao[${i}].texto = this.value"
+                placeholder="Ex: Pressione X e vá para o menu inventário">
+            <button class="btn btn-sm btn-outline-danger px-2" onclick="removePasso(${i})"><i class="bi bi-x"></i></button>
+        </div>
+    `).join('');
+}
+
+function addPasso() {
+    passosReproducao.push({ texto: '', feito: false });
+    renderPassosModal();
+}
+
+function removePasso(i) {
+    passosReproducao.splice(i, 1);
+    renderPassosModal();
+}
+
+function renderTagsCheckboxes(selectedTagIds = []) {
+    const container = document.getElementById('tagsCheckboxContainer');
+    if (!container) return;
+    if (allTags.length === 0) {
+        container.innerHTML = '<small class="text-muted">Nenhuma tag disponível. Admin pode criar em <em>Tags</em>.</small>';
+        return;
+    }
+    container.innerHTML = allTags.map(t => `
+        <div class="form-check form-check-inline">
+            <input class="form-check-input" type="checkbox" id="tag_${t.id}" value="${t.id}"
+                ${selectedTagIds.includes(t.id) ? 'checked' : ''}>
+            <label class="form-check-label" for="tag_${t.id}">
+                <span class="badge rounded-pill" style="background:${t.cor}20;color:${t.cor};border:1px solid ${t.cor}50">${escHtml(t.nome)}</span>
+            </label>
+        </div>
+    `).join('');
 }
 
 function showBugModal(bug = null) {
@@ -515,6 +606,14 @@ function showBugModal(bug = null) {
         }
     }
 
+    // Tags
+    const selectedTagIds = (bug?.tags || []).map(t => t.id);
+    renderTagsCheckboxes(selectedTagIds);
+
+    // Passos de Reprodução
+    passosReproducao = (bug?.passosReproducao || []).map(p => ({ ...p }));
+    renderPassosModal();
+
     if (currentUser.perfil === 'Admin') {
         loadUsuariosSelect().then(() => {
             if (bug?.atribuidoParaId) {
@@ -533,6 +632,10 @@ async function editBug(id) {
 
 async function saveBug() {
     const id = document.getElementById('bugId').value;
+
+    const selectedTagIds = Array.from(document.querySelectorAll('#tagsCheckboxContainer input[type=checkbox]:checked'))
+        .map(cb => parseInt(cb.value));
+
     const data = {
         titulo: document.getElementById('bugTitulo').value,
         descricao: document.getElementById('bugDescricao').value,
@@ -550,7 +653,9 @@ async function saveBug() {
         resultadoEsperado: document.getElementById('bugResultadoEsperado').value || null,
         resultadoObtido: document.getElementById('bugResultadoObtido').value || null,
         detalhesAmbiente: document.getElementById('bugDetalhesAmbiente').value || null,
-        bloqueiaLancamento: document.getElementById('bugBloqueiaLancamento').checked
+        bloqueiaLancamento: document.getElementById('bugBloqueiaLancamento').checked,
+        tagIds: selectedTagIds,
+        passosReproducao: passosReproducao.filter(p => p.texto.trim() !== '')
     };
 
     if (!data.titulo) return showToast('Título é obrigatório.', 'danger');
@@ -701,6 +806,15 @@ async function reloadProjetosSelects() {
 }
 
 // ---- Usuários ----
+function cargoBadgeHtml(cargo) {
+    const colors = {
+        Lider: '#f59e0b', Programador: '#3b82f6', Designer: '#a855f7',
+        Artista: '#ec4899', SoundDesigner: '#06b6d4', QA: '#10b981'
+    };
+    const color = colors[cargo] || '#6b7280';
+    return `<span class="cargo-badge" style="background:${color}20;color:${color};border:1px solid ${color}40">${escHtml(cargo)}</span>`;
+}
+
 async function loadUsuarios() {
     const res = await apiFetch('/api/usuarios');
     if (!res.ok) return;
@@ -712,18 +826,29 @@ async function loadUsuarios() {
         const promoverLabel = u.perfil === 'Admin' ? 'Rebaixar para Dev' : 'Promover a Admin';
         const promoverIcon = u.perfil === 'Admin' ? 'bi-arrow-down-circle' : 'bi-arrow-up-circle';
         const promoverNovoPerfil = u.perfil === 'Admin' ? 'Dev' : 'Admin';
+        const novoCargoSugerido = promoverNovoPerfil === 'Admin' ? 'Lider' : 'Programador';
         return `
         <tr>
             <td>${u.id}</td>
             <td>${escHtml(u.nome)}${isMe ? ' <span class="badge bg-secondary">você</span>' : ''}</td>
             <td>${escHtml(u.email)}</td>
             <td><span class="badge bg-${badgeColor}">${u.perfil}</span></td>
+            <td>${cargoBadgeHtml(u.cargo || '—')}</td>
             <td><small>${new Date(u.criadoEm).toLocaleDateString('pt-BR')}</small></td>
             <td>
-                <div class="d-flex gap-1">
-                    ${!isMe ? `<button class="btn-action" title="${promoverLabel}" onclick="togglePerfil(${u.id}, '${promoverNovoPerfil}')">
+                <div class="d-flex gap-1 flex-wrap">
+                    ${!isMe ? `<button class="btn-action" title="${promoverLabel}" onclick="togglePerfil(${u.id}, '${promoverNovoPerfil}', '${novoCargoSugerido}')">
                         <i class="bi ${promoverIcon}"></i>
                     </button>` : ''}
+                    ${!isMe ? `<select class="form-select form-select-sm" style="max-width:130px" onchange="mudarCargo(${u.id}, this.value)">
+                        <option value="">Cargo…</option>
+                        <option value="Lider" ${u.cargo==='Lider'?'selected':''}>Líder</option>
+                        <option value="Programador" ${u.cargo==='Programador'?'selected':''}>Programador</option>
+                        <option value="Designer" ${u.cargo==='Designer'?'selected':''}>Designer</option>
+                        <option value="Artista" ${u.cargo==='Artista'?'selected':''}>Artista</option>
+                        <option value="SoundDesigner" ${u.cargo==='SoundDesigner'?'selected':''}>Sound Designer</option>
+                        <option value="QA" ${u.cargo==='QA'?'selected':''}>QA</option>
+                    </select>` : ''}
                     ${!isMe ? `<button class="btn-action danger" title="Excluir" onclick="deleteUsuario(${u.id})">
                         <i class="bi bi-trash"></i>
                     </button>` : ''}
@@ -749,10 +874,10 @@ async function deleteUsuario(id) {
     }
 }
 
-async function togglePerfil(id, novoPerfil) {
+async function togglePerfil(id, novoPerfil, novoCargo) {
     const acao = novoPerfil === 'Admin' ? 'promover a Admin' : 'rebaixar para Dev';
     if (!confirm(`Deseja ${acao} este usuário?`)) return;
-    const res = await apiFetch(`/api/usuarios/${id}`, 'PUT', { perfil: novoPerfil });
+    const res = await apiFetch(`/api/usuarios/${id}`, 'PUT', { perfil: novoPerfil, cargo: novoCargo });
     if (res.ok) {
         showToast(`Usuário atualizado para ${novoPerfil}!`);
         loadUsuarios();
@@ -761,7 +886,18 @@ async function togglePerfil(id, novoPerfil) {
     }
 }
 
-// ---- Comentários / Detalhes do Bug ----
+async function mudarCargo(id, cargo) {
+    if (!cargo) return;
+    const res = await apiFetch(`/api/usuarios/${id}`, 'PUT', { cargo });
+    if (res.ok) {
+        showToast('Cargo atualizado!');
+        loadUsuarios();
+    } else {
+        showToast('Erro ao alterar cargo.', 'danger');
+    }
+}
+
+// ---- Bug Detail (Mini-Dashboard) ----
 let currentDetailBugId = null;
 
 async function openBugDetail(id) {
@@ -773,8 +909,11 @@ async function openBugDetail(id) {
     document.getElementById('detailDescricao').textContent = b.descricao || 'Sem descrição.';
     document.getElementById('detailProjeto').textContent = b.projetoNome;
     document.getElementById('detailReportado').textContent = b.reportadoPorNome;
+    document.getElementById('detailReportadoCargo').textContent = b.reportadoPorCargo ? `· ${b.reportadoPorCargo}` : '';
     document.getElementById('detailAtribuido').textContent = b.atribuidoParaNome || '—';
+    document.getElementById('detailAtribuidoCargo').textContent = b.atribuidoParaCargo ? `· ${b.atribuidoParaCargo}` : '';
     document.getElementById('detailData').textContent = new Date(b.criadoEm).toLocaleDateString('pt-BR');
+    document.getElementById('detailDiasAberto').textContent = b.diasAberto + (b.diasAberto === 1 ? ' dia aberto' : ' dias aberto');
 
     const statusEl = document.getElementById('detailStatus');
     statusEl.textContent = statusLabel(b.status);
@@ -832,23 +971,92 @@ async function openBugDetail(id) {
         ambienteRow.classList.add('d-none');
     }
 
+    // Tags
+    const tagsEl = document.getElementById('detailTags');
+    tagsEl.innerHTML = b.tags?.length > 0 ? renderTagBadges(b.tags) : '';
+
+    // Passos de Reprodução (checkboxes interativos)
+    renderPassosDetail(b.passosReproducao || []);
+
     const editBtn = document.querySelector('#bugDetailModal .dev-edit-btn');
     canEditBug(b) ? editBtn.classList.remove('d-none') : editBtn.classList.add('d-none');
 
     document.getElementById('novoComentario').value = '';
-    await loadComentarios(id);
+
+    // Carregar comentários e timeline em paralelo
+    const [comentarios] = await Promise.all([
+        loadComentarios(id),
+        loadTimeline(id)
+    ]);
+
     new bootstrap.Modal(document.getElementById('bugDetailModal')).show();
+}
+
+function renderPassosDetail(passos) {
+    const container = document.getElementById('detailPassos');
+    const section = document.getElementById('detailPassosSection');
+    if (!passos || passos.length === 0) {
+        if (section) section.classList.add('d-none');
+        return;
+    }
+    if (section) section.classList.remove('d-none');
+    if (!container) return;
+    container.innerHTML = passos.map((p, i) => `
+        <div class="d-flex align-items-start gap-2 mb-2 passo-item ${p.feito ? 'passo-done' : ''}">
+            <input type="checkbox" class="form-check-input mt-1 flex-shrink-0" ${p.feito ? 'checked' : ''}
+                onchange="togglePasso(${currentDetailBugId}, ${i}, this.checked)">
+            <label class="form-check-label small ${p.feito ? 'text-decoration-line-through text-muted' : ''}">${escHtml(p.texto)}</label>
+        </div>
+    `).join('');
+}
+
+async function togglePasso(bugId, index, feito) {
+    const b = allBugs.find(x => x.id === bugId);
+    if (!b || !b.passosReproducao) return;
+    b.passosReproducao[index].feito = feito;
+    const res = await apiFetch(`/api/bugs/${bugId}`, 'PUT', {
+        passosReproducao: b.passosReproducao
+    });
+    if (!res.ok) showToast('Erro ao salvar passo.', 'danger');
+    else renderPassosDetail(b.passosReproducao);
+}
+
+async function loadTimeline(bugId) {
+    const res = await apiFetch(`/api/bugs/${bugId}/historico`);
+    const container = document.getElementById('detailTimeline');
+    const section = document.getElementById('detailTimelineSection');
+    if (!res.ok || !container) return;
+    const historico = await res.json();
+    if (historico.length === 0) {
+        if (section) section.classList.add('d-none');
+        return;
+    }
+    if (section) section.classList.remove('d-none');
+    container.innerHTML = historico.map(h => `
+        <div class="timeline-item">
+            <div class="timeline-dot"></div>
+            <div class="timeline-content">
+                <span class="badge badge-status-${h.statusAnterior} me-1" style="font-size:0.65rem">${statusLabel(h.statusAnterior)}</span>
+                <i class="bi bi-arrow-right text-muted" style="font-size:0.7rem"></i>
+                <span class="badge badge-status-${h.statusNovo} ms-1" style="font-size:0.65rem">${statusLabel(h.statusNovo)}</span>
+                <small class="text-muted ms-2">${escHtml(h.usuarioNome)}</small>
+                <small class="text-muted d-block">${new Date(h.criadoEm).toLocaleString('pt-BR', {day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</small>
+            </div>
+        </div>
+    `).join('');
 }
 
 async function loadComentarios(bugId) {
     const res = await apiFetch(`/api/bugs/${bugId}/comentarios`);
-    if (!res.ok) return;
+    if (!res.ok) return [];
     const comentarios = await res.json();
     const lista = document.getElementById('comentariosLista');
+    const countEl = document.getElementById('detailComentariosCount');
+    if (countEl) countEl.textContent = comentarios.length;
 
     if (comentarios.length === 0) {
         lista.innerHTML = '<p class="text-muted small text-center py-2">Nenhum comentário ainda. Seja o primeiro!</p>';
-        return;
+        return comentarios;
     }
 
     lista.innerHTML = comentarios.map(c => {
@@ -880,6 +1088,7 @@ async function loadComentarios(bugId) {
     }).join('');
 
     lista.scrollTop = lista.scrollHeight;
+    return comentarios;
 }
 
 async function postComentario() {

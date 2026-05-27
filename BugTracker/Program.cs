@@ -77,6 +77,9 @@ builder.Services.AddScoped<IProjetoService, ProjetoService>();
 builder.Services.AddScoped<IBugService, BugService>();
 builder.Services.AddScoped<IComentarioRepository, ComentarioRepository>();
 builder.Services.AddScoped<IComentarioService, ComentarioService>();
+builder.Services.AddScoped<ITagRepository, TagRepository>();
+builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<IBugHistoricoRepository, BugHistoricoRepository>();
 
 var app = builder.Build();
 
@@ -117,6 +120,7 @@ using (var scope = app.Services.CreateScope())
                 Email = "admin@bugtracker.com",
                 SenhaHash = BCrypt.Net.BCrypt.HashPassword("Admin@123"),
                 Perfil = "Admin",
+                Cargo = "Lider",
                 AceitouTermos = true,
                 AceitouTermosEm = DateTime.UtcNow
             });
@@ -135,6 +139,7 @@ using (var scope = app.Services.CreateScope())
                 Email = "lucas@bugtracker.com",
                 SenhaHash = BCrypt.Net.BCrypt.HashPassword("Dev@123"),
                 Perfil = "Dev",
+                Cargo = "Programador",
                 AceitouTermos = true,
                 AceitouTermosEm = DateTime.UtcNow.AddDays(-30)
             };
@@ -144,6 +149,7 @@ using (var scope = app.Services.CreateScope())
                 Email = "ana@bugtracker.com",
                 SenhaHash = BCrypt.Net.BCrypt.HashPassword("Dev@123"),
                 Perfil = "Dev",
+                Cargo = "QA",
                 AceitouTermos = true,
                 AceitouTermosEm = DateTime.UtcNow.AddDays(-25)
             };
@@ -371,6 +377,22 @@ using (var scope = app.Services.CreateScope())
 
             db.Comentarios.AddRange(comentarios);
             await db.SaveChangesAsync();
+
+            if (!db.Tags.Any())
+            {
+                db.Tags.AddRange(
+                    new BugTracker.Models.Tag { Nome = "Arte/Animação", Cor = "#a855f7", Departamento = "Arte" },
+                    new BugTracker.Models.Tag { Nome = "Áudio", Cor = "#f97316", Departamento = "Áudio" },
+                    new BugTracker.Models.Tag { Nome = "Gameplay", Cor = "#22c55e", Departamento = "Gameplay" },
+                    new BugTracker.Models.Tag { Nome = "UI/UX", Cor = "#06b6d4", Departamento = "UI/UX" },
+                    new BugTracker.Models.Tag { Nome = "Performance", Cor = "#ef4444", Departamento = "Performance" },
+                    new BugTracker.Models.Tag { Nome = "Rede/Online", Cor = "#3b82f6", Departamento = "Rede" },
+                    new BugTracker.Models.Tag { Nome = "Localização", Cor = "#eab308", Departamento = "Localização" },
+                    new BugTracker.Models.Tag { Nome = "Física", Cor = "#64748b", Departamento = "Gameplay" }
+                );
+                await db.SaveChangesAsync();
+            }
+
             logger.LogInformation("Seed de demonstração criado: 3 projetos, {Bugs} bugs, {Comentarios} comentários.", bugs.Count, comentarios.Count);
         }
     }

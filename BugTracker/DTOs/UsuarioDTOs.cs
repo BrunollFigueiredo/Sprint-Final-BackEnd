@@ -8,6 +8,7 @@ public class UsuarioResponseDTO
     public string Nome { get; set; } = string.Empty;
     public string Email { get; set; } = string.Empty;
     public string Perfil { get; set; } = string.Empty;
+    public string Cargo { get; set; } = string.Empty;
     public DateTime CriadoEm { get; set; }
 }
 
@@ -18,4 +19,6 @@ public class UsuarioUpdateDTO
     [MaxLength(150), EmailAddress]
     public string? Email { get; set; }
     public string? Perfil { get; set; }
+    [MaxLength(50)]
+    public string? Cargo { get; set; }
 }
